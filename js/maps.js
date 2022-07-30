@@ -90,7 +90,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
 
         // Update metadata textbox
         metadata_placeholder.style.display = "none";
-        metadata_textbox.style.display = "block";
+        metadata_textbox.style.display = "none";
         var current_metadata = metadata_textbox.innerHTML;
         var date = new Date();
         var timestamp = date.toDateString() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
@@ -105,6 +105,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
             var metadata = metadata + "," + current_metadata; 
         }
         metadata_textbox.innerHTML = metadata;
+        $('#'+metadata_id).fadeIn("slow");
     });
 
     map.on('locationerror', function(e) {
@@ -120,7 +121,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
     }}
 }
 
-function stopLocate(map, gps_group) {
+function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {
     // Stop GPS tracking & remove GPS leaflet layer group
 
     console.log('Stopping GPS service ...');
@@ -137,6 +138,9 @@ function stopLocate(map, gps_group) {
     gps_group.clearLayers();
 
     // Remove metadata
+    var metadata_textbox = document.getElementById(metadata_id);
+    var metadata_placeholder = document.getElementById(metadata_placeholder_id);
+    console.log("Clearing metadata")
     metadata_placeholder.style.display = "block";
     metadata_textbox.innerHTML = "";
     metadata_textbox.style.display = "none";
@@ -156,7 +160,7 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
             showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id);
         }
         else {
-            stopLocate(map, gps_group);
+            stopLocate(map, gps_group, metadata_id, metadata_placeholder_id);
         }
     })
 
