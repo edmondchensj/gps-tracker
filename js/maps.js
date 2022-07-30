@@ -90,7 +90,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
 
         // Update metadata textbox
         metadata_placeholder.style.display = "none";
-        metadata_textbox.style.display = "none";
+        metadata_textbox.style.display = "hidden"; // hidden allows space to remain, but text invisible
         var current_metadata = metadata_textbox.innerHTML;
         var date = new Date();
         var timestamp = date.toDateString() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
