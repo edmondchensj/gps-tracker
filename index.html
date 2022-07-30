@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel='stylesheet' type='text/css' href="./lib/bootstrap.min.css">
+    <link rel='stylesheet' type='text/css' href="./css/style.css">
+    <link rel='stylesheet' type='text/css' href="./lib/leaflet-1.6.0/leaflet.css">
+    <title>GPS Tracker</title>
+</head>
+
+<body>
+    <div class="container my-3">
+        <div class="font-weight-light text-center">Simple GPS TRACKER</div>
+
+        <div class="row px-2 justify-content-center mt-4">
+            <div class="custom-control custom-switch" style="transform: scale(1.4);">
+                <input type="checkbox" class="custom-control-input" id="user-location">
+                <label class="custom-control-label text-dark font-weight-bold bg-customisation-btn rounded px-1" for="user-location">App On/Off</label>
+            </div>
+        </div>
+        <div class="row px-2 justify-content-center mt-2 mb-3">
+            <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load <br> and updates only when change is detected</small>
+        </div>
+        <div class="row px-2">
+            <div class="col-md-6 mx-auto px-2">
+                    <code>
+                        <div class="mx-2 pl-4" id="location-metadata" style="height:130px; overflow-y:auto; display:none"></div>
+                        <div class="mx-2 pl-4" id="metadata-placeholder" style="height:130px;">
+                            <div id="placeholder" class="mt-4">Once turned on, your location will appear here</div>
+                        </div>
+                    </code>
+            </div>
+        </div>
+
+        <div class="row justify-content-center my-3">
+            <div id="map" style="height:380px; width:400px"></div>
+        </div>
+        <div id="footer">
+            Copyright 2022
+        </div>
+    </div>
+</body>
+
+<script src="./lib/leaflet-1.6.0/leaflet.js"></script>
+
+<script src="./lib/jquery.min.js"></script>
+
+<script type="module">
+    import { createMap, renderMap } from "./js/maps.js";
+    // To show: leaflet map, leaflet map coordinate using map.locate, sample json output to push to cloud, last updated ts, last three logs
+    console.log("initialising map");
+    var map = createMap("map");
+
+    console.log('activating map GPS location service')
+    renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
+  
+</script>
