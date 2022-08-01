@@ -11,9 +11,7 @@ var changi = [// southwest
 var singapore_island = [//southwest
         [1.265206318838706, 103.71624436262216],
         //northeast
-        [1.432342931373927, 103.98382638715712]]
-
-var path_to_changi_map = "./img/changi_21May21.png"
+        [1.4292806607158928, 104.02705269597813]]
 
 function createMap(map_id, lat=1.355, lng=103.991, zoom=12) { 
     // Render map at specified centre coordinates and zoom. 
