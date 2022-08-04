@@ -3,13 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <!-- Packages -->
     <link rel='stylesheet' type='text/css' href="./lib/bootstrap.min.css">
     <link rel='stylesheet' type='text/css' href="./css/style.css">
     <link rel='stylesheet' type='text/css' href="./lib/leaflet-1.6.0/leaflet.css">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='./img/favicon/apple-touch-icon.png') }}">
-    <link rel="shortcut icon" href="./img/favicon/favicon.ico">
-    <link rel="manifest" href="./img/favicon/site.webmanifest">
-    <!-- Icons prepared using https://pixelied.com/ and https://favicon.io/-->
+    
+    <!-- Home screen icons, prepared using https://pixelied.com/ and https://favicon.io/-->
+    <link rel="apple-touch-icon" href="./assets/favicon/apple-touch-icon.png">
+    <link rel="shortcut icon" href="./assets/favicon/favicon.ico">
+    <link rel="manifest" href="./assets/favicon/site.webmanifest">
+
     <title>GPS Tracker</title>
 </head>
 
@@ -17,46 +21,47 @@
     <div class="container my-3">
         <div class="font-weight-light text-center">Simple GPS TRACKER</div>
 
-        <div class="row px-2 justify-content-center mt-4">
-            <div class="custom-control custom-switch" style="transform: scale(1.4);">
-                <input type="checkbox" class="custom-control-input" id="user-location">
-                <label class="custom-control-label text-dark font-weight-bold bg-customisation-btn rounded px-1" for="user-location">App On/Off</label>
+        <div id="main">
+            <div class="row px-2 justify-content-center mt-4">
+                <div class="spinner-border mt-2 text-black-50" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
             </div>
-        </div>
-        <div class="row px-2 justify-content-center mt-2 mb-3">
-            <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load <br> and updates only when change is detected</small>
-        </div>
-        <div class="row px-2" style="height:130px;overflow-y:auto">
-            <div class="col-md-6 mx-auto px-2">
-                    <code>
-                        <div class="mx-2 pl-4" id="location-metadata" style="display:none"></div>
-                        <div class="mx-2 pl-4" id="metadata-placeholder">
-                            <div id="placeholder" class="mt-4">Once turned on, your location will appear here</div>
-                        </div>
-                    </code>
-            </div>
-        </div>
-
-        <div class="row justify-content-center my-3">
-            <div id="map" style="height:380px; width:400px"></div>
-        </div>
-        <div id="footer">
-            Copyright 2022
         </div>
     </div>
 </body>
 
-<script src="./lib/leaflet-1.6.0/leaflet.js"></script>
-
 <script src="./lib/jquery.min.js"></script>
 
-<script type="module">
-    import { createMap, renderMap } from "./js/maps.js";
-    // To show: leaflet map, leaflet map coordinate using map.locate, sample json output to push to cloud, last updated ts, last three logs
-    console.log("initialising map");
-    var map = createMap("map");
+<!-- Amazon Cognito for Authentication -->
+<script src="./lib/aws-sdk-2.7.16.min.js"></script> 
+<script src="./lib/aws-cognito/amazon-cognito-auth.min.js"></script>  
+<script src="./config.js"></script>
+<script src="./lib/aws-cognito/amazon-cognito-identity.min.js"></script>
 
-    console.log('activating map GPS location service')
-    renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
-  
+<!-- Run validation for user session -->
+<script type="module">
+    // Call Cognito to validate user session
+    console.log("Running Cognito user session validation")
+    import { validateCognitoUser } from "./js/auth.js"
+    import { setInnerHTMLWithJS } from "./js/utils.js"
+
+    const success = validateCognitoUser();
+    console.log("Cognito user validation success: ", success);
+    var page = ""
+
+    if (!success) {
+        console.log("Cognito user invalid, redirecting to login");
+        // Redirect to login.html if user session is null or invalid
+        page = "/pages/login.html"
+    } else {
+        // Redirect to home screen if valid
+        //page = "/pages/home-screen.html" 
+        page = "/pages/select-bus.html"  //somehow home-screen works but this doesnt
+    }
+
+    // Get page
+    const html = await fetch(page).then((data) => data.text());
+    const main = document.getElementById("main")
+    setInnerHTMLWithJS(main, html);
 </script>

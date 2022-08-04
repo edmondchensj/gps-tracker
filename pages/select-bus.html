@@ -1,0 +1,22 @@
+<script type="module">
+    // Note: Script type module limits functions to module scope, so functions need to use window. prefix to make
+    import { setInnerHTMLWithJS } from "./js/utils.js"
+    
+    window.selectBusPlate = async function(plateNumber) {
+        console.log(plateNumber);    
+        const html = await fetch('/pages/home-screen.html').then((data) => data.text());
+        const main = document.getElementById("main")
+        setInnerHTMLWithJS(main, html);
+    }
+</script>
+
+<div class="row px-2 justify-content-center mt-4">
+    <h3>Select bus plate</h3>
+</div>
+
+<div class="row px-2 mt-2">
+    <button class="btn btn-lg block btn-dark mx-2" onclick="selectBusPlate('XX1234D')">
+        XX1234D
+    </button>
+</div>
+
