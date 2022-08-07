@@ -1,12 +1,21 @@
 <script type="module">
     // Note: Script type module limits functions to module scope, so functions need to use window. prefix to make
-    import { setInnerHTMLWithJS } from "./js/utils.js"
-    
+    import { goToPage, setBusPlate, getBusPlate } from "./js/utils.js"
+
+    // On user selection, go to home screen and set bus plate
     window.selectBusPlate = async function(plateNumber) {
-        console.log(plateNumber);    
-        const html = await fetch('/pages/home-screen.html').then((data) => data.text());
-        const main = document.getElementById("main")
-        setInnerHTMLWithJS(main, html);
+        console.log("Bus plate selected: ", plateNumber);    
+        const nav = await goToPage("home");
+        setBusPlate(plateNumber);
+    }
+
+    // Check local storage, if present, go straight to home-screen
+    let savedBusPlate = getBusPlate();
+    console.log("Checking for previous saved bus plate", savedBusPlate);
+    if (savedBusPlate != null) {
+        console.log("Bus plate saved previously, going to main page ...")
+        const nav = await goToPage("home");
+        setBusPlate(savedBusPlate);
     }
 </script>
 
@@ -14,9 +23,16 @@
     <h3>Select bus plate</h3>
 </div>
 
-<div class="row px-2 mt-2">
-    <button class="btn btn-lg block btn-dark mx-2" onclick="selectBusPlate('XX1234D')">
-        XX1234D
-    </button>
+<div class="row px-2 mt-2 justify-content-center">
+    <div class="col-md-4 mx-4 text-center">
+        <button class="btn btn-lg block btn-xl btn-dark my-2" 
+        onclick="selectBusPlate('XX1234A')">
+        XX1234A</button>
+        <button class="btn btn-lg block btn-xl btn-dark my-2" 
+                onclick="selectBusPlate('YY4321B')">
+                YY4321B</button>
+        <button class="btn btn-lg block btn-xl btn-dark my-2" 
+                onclick="selectBusPlate('ZZ1234C')">
+                ZZ1234C</button>
+    </div>
 </div>
-

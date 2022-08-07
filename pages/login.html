@@ -1,53 +1,60 @@
-<div class="my-2 mx-2">
-    <form>
-        <h2>Sign in</h2>
+<div class="row my-2 mx-2 justify-content-center">
+    <div class="col-md-4">
+        <form>
+            <div class="row justify-content-center my-3">
+                <h2>Sign in</h2>
+            </div>
+            <div class="form-group">
+                <input class="form-control" type="text" id="inputUsername"  placeholder="Username" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <input class="form-control" type="password" id="inputPassword"  placeholder="Password" name="password" required>    
+            </div>              
+            
+            <button class="btn btn-primary block" type="button" onclick="signInButton(event)">Sign in</button>
     
-        <input type="text" id="inputUsername"  placeholder="Email address" name="username" required autofocus>
-        <input type="password" id="inputPassword"  placeholder="Password" name="password" required>    
-        <button type="button" onclick="signInButton()">Sign in</button>
-
-    </form>
+        </form>
+    </div>
 </div>
 
 
 <script type="module">
-    import { setInnerHTMLWithJS } from "./js/utils.js"
-    window.signInButton = function() {
+    import { goToPage } from "./js/utils.js"
+    window.signInButton = function(event) {
     
-	var authenticationData = {
-        Username : document.getElementById("inputUsername").value,
-        Password : document.getElementById("inputPassword").value,
-    };
-	
-    var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
-    
-	var poolData = {
-        UserPoolId : _config.cognito.userPoolId, // Your user pool id here
-        ClientId : _config.cognito.clientId, // Your client id here
-    };
-	
-    var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-	
-    var userData = {
-        Username : document.getElementById("inputUsername").value,
-        Pool : userPool,
-    };
-	
-    var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-    
-	cognitoUser.authenticateUser(authenticationDetails, {
-        onSuccess: async function (result) {
-			var accessToken = result.getAccessToken().getJwtToken();
-			console.log(accessToken);	
-            console.log("User authenticated. Logging in...")
-            const html = await fetch("/pages/select-bus.html").then((data) => data.text());
-            const main = document.getElementById("main");
-            setInnerHTMLWithJS(main, html);
-        },
+        var authenticationData = {
+            Username : document.getElementById("inputUsername").value,
+            Password : document.getElementById("inputPassword").value,
+        };
+        
+        var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+        
+        var poolData = {
+            UserPoolId : _config.cognito.userPoolId, // Your user pool id here
+            ClientId : _config.cognito.clientId, // Your client id here
+        };
+        
+        var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        
+        var userData = {
+            Username : document.getElementById("inputUsername").value,
+            Pool : userPool,
+        };
+        
+        var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+        event.preventDefault(); // prevent page from refreshing before authentication is completed, causing network errors
+        cognitoUser.authenticateUser(authenticationDetails, {
+            onSuccess: async function (result) {
+                var accessToken = result.getAccessToken().getJwtToken();
+                console.log(accessToken);	
+                console.log("User authenticated. Logging in...")
+                const nav = await goToPage("select-bus");
+            },
 
-        onFailure: function(err) {
-            alert(err.message || JSON.stringify(err));
-        },
-    });
-  }
+            onFailure: function(err) {
+                alert(err.message || JSON.stringify(err));
+            },
+        });
+    }
+    console.log("Loaded login page")
 </script>

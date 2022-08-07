@@ -1,12 +1,25 @@
-function validateCognitoUser() {
+function getUserPool() {
+    // Authenticate with Amazon Cognito to retrieve user pool
     var data = { 
 		UserPoolId : _config.cognito.userPoolId,
         ClientId : _config.cognito.clientId
     };
     console.log("Cognito data: ", data);
     var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+    console.log("User pool: ", userPool);
+    return userPool;
+}
+
+function getUser() {
+    // Fetch user object from Cognito
+    var userPool = getUserPool();
     var cognitoUser = userPool.getCurrentUser();
     console.log("Cognito user: ", cognitoUser);
+    return cognitoUser;
+}
+
+function validateCognitoUser() {
+    var cognitoUser = getUser();
     
 	//window.onload = function() {
     if (cognitoUser != null) {
@@ -33,4 +46,4 @@ function validateCognitoUser() {
     //}
 }
 
-export { validateCognitoUser };
+export { validateCognitoUser, getUser };

@@ -18,11 +18,30 @@
     display: block;
     width: 100%;
     border: none;
-    padding: 14px 28px;
-    font-size: 22px;
     cursor: pointer;
     text-align: center;
   }
+
+.btn-xl {
+    padding: 14px 28px;
+    font-size: 22px;
+}
+
+.text-lg {
+    font-size: 130%;
+}
+
+.form-group {
+    margin-bottom: 10px !important;
+}
+
+.btn-primary {
+    background-color: rgb(52, 132, 94);
+}
+
+.bg-primary {
+    background-color: #58b893 !important;
+}
 
 @media screen and (min-width: 600px) {
     #logo {

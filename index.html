@@ -18,10 +18,14 @@
 </head>
 
 <body>
-    <div class="container my-3">
-        <div class="font-weight-light text-center">Simple GPS TRACKER</div>
 
-        <div id="main">
+    <div class="font-weight-light text-center bg-primary py-2">
+        <img class='px-1' 
+            src="./assets/bus.png" 
+            style='max-width:40px; max-height:40px; padding-bottom: 1px; filter: invert(100%);'>
+    </div>
+    <div class="container my-1">
+        <div class="initial-load" id="main">
             <div class="row px-2 justify-content-center mt-4">
                 <div class="spinner-border mt-2 text-black-50" role="status">
                     <span class="sr-only">Loading...</span>
@@ -32,6 +36,7 @@
 </body>
 
 <script src="./lib/jquery.min.js"></script>
+<script src="./lib/leaflet-1.6.0/leaflet.js"></script>
 
 <!-- Amazon Cognito for Authentication -->
 <script src="./lib/aws-sdk-2.7.16.min.js"></script> 
@@ -41,27 +46,35 @@
 
 <!-- Run validation for user session -->
 <script type="module">
-    // Call Cognito to validate user session
-    console.log("Running Cognito user session validation")
-    import { validateCognitoUser } from "./js/auth.js"
-    import { setInnerHTMLWithJS } from "./js/utils.js"
+    import { validateCognitoUser, getUser } from "./js/auth.js"
+    import { goToPage } from "./js/utils.js"
+    
+    // Check if admin has accessed hidden logout route
+    let path = window.location.hash;
+    console.log("current path: ", path);
+    if (path == "#/logout") {
+        var cognitoUser = getUser();
+        if (cognitoUser != null) {
+            cognitoUser.signOut();
+        }
+        goToPage("login");
+        history.replaceState(null, null, ' '); // clear URL hash
+    }
 
+    console.log("Running Cognito user session validation")
     const success = validateCognitoUser();
     console.log("Cognito user validation success: ", success);
-    var page = ""
 
     if (!success) {
         console.log("Cognito user invalid, redirecting to login");
         // Redirect to login.html if user session is null or invalid
-        page = "/pages/login.html"
+        goToPage("login");
     } else {
-        // Redirect to home screen if valid
-        //page = "/pages/home-screen.html" 
-        page = "/pages/select-bus.html"  //somehow home-screen works but this doesnt
+        const main = document.getElementById("main")
+        if (main.classList.contains("initial-load")) {
+            // Redirect to home screen if it is first time
+            main.classList.remove("initial-load");
+            goToPage("select-bus");
+        }
     }
-
-    // Get page
-    const html = await fetch(page).then((data) => data.text());
-    const main = document.getElementById("main")
-    setInnerHTMLWithJS(main, html);
 </script>

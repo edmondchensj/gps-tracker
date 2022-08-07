@@ -1,21 +1,44 @@
-<div class="row mt-4">
-    <h3><div id="bus-plate"></div></h3>
+<!-- Run map -->
+<script type="module">
+    import { createMap, renderMap } from "./js/maps.js";
+    console.log("initialising map");
+    var map = createMap("map");
+
+    console.log('activating map GPS location service')
+    renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
+</script>
+
+<!-- Return to select bus page -->
+<script type="module">
+    import { goToPage, clearBusPlate } from "./js/utils.js"
+
+    window.returnToSelectBus = async function () {
+        goToPage("select-bus");
+        clearBusPlate();
+    }
+</script>
+
+<div class="row justify-content-center mt-0">
+    <button class="btn btn-link text-muted" onclick="returnToSelectBus()">Not the correct bus?</button>
+</div>
+<div class="row justify-content-center">
+    <div class="badge badge-secondary text-lg" id="bus-plate"></div>
 </div>
 <div class="row px-2 justify-content-center mt-4">
-    <div class="custom-control custom-switch" style="transform: scale(1.4);">
+    <div class="custom-control custom-switch" style="transform: scale(1.75);">
         <input type="checkbox" class="custom-control-input" id="user-location">
-        <label class="custom-control-label text-dark font-weight-bold bg-customisation-btn rounded px-1" for="user-location">App On/Off</label>
+        <label class="custom-control-label text-dark bg-customisation-btn rounded" for="user-location">On/Off</label>
     </div>
 </div>
-<div class="row px-2 justify-content-center mt-2 mb-3">
-    <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load <br> and updates only when change is detected</small>
+<div class="row px-2 justify-content-center my-3">
+    <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load</small>
 </div>
 <div class="row px-2" style="height:130px;overflow-y:auto">
     <div class="col-md-6 mx-auto px-2">
             <code>
                 <div class="mx-2 pl-4" id="location-metadata" style="display:none"></div>
                 <div class="mx-2 pl-4" id="metadata-placeholder">
-                    <div id="placeholder" class="mt-4">Once turned on, your location will appear here</div>
+                    <div id="placeholder" class="mt-4">Once turned on, your location should appear here</div>
                 </div>
             </code>
     </div>
@@ -28,16 +51,3 @@
 <div id="footer">
     Copyright 2022
 </div>
-
-<script src="./lib/leaflet-1.6.0/leaflet.js"></script>
-
-<!-- Run map -->
-<script type="module">
-    import { createMap, renderMap } from "./js/maps.js";
-    console.log("initialising map");
-    var map = createMap("map");
-
-    console.log('activating map GPS location service')
-    renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
-</script>
-
