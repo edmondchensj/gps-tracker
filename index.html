@@ -59,6 +59,7 @@
         if (cognitoUser != null) {
             cognitoUser.signOut();
         }
+        logout_link.style.display = "none"; 
         goToPage("login");
         history.replaceState(null, null, ' '); // clear URL hash
     }

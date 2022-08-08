@@ -48,6 +48,7 @@
                 var accessToken = result.getAccessToken().getJwtToken();
                 console.log(accessToken);	
                 console.log("User authenticated. Logging in...")
+                logout_link.style.display = "block"; 
                 const nav = await goToPage("select-bus");
             },
 
