@@ -31,6 +31,10 @@
     font-size: 130%;
 }
 
+.text-md {
+    font-size: 100%;
+}
+
 .form-group {
     margin-bottom: 10px !important;
 }

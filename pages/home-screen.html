@@ -1,17 +1,13 @@
 <!-- Run map -->
 <script type="module">
     import { createMap, renderMap } from "./js/maps.js";
+
     console.log("initialising map");
     var map = createMap("map");
 
     console.log('activating map GPS location service')
     renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
 
-    const credentials = new AWS.CognitoIdentityCredentials({
-        IdentityPoolId: _config.cognito.identityPoolId
-    });
-    console.log("Cognito Identity Creds: ", credentials);
-    
 </script>
 
 <!-- Return to select bus page -->
@@ -24,9 +20,6 @@
     }
 </script>
 
-<div class="row justify-content-center mt-0">
-    <button class="btn btn-link text-muted" onclick="returnToSelectBus()">Not the correct bus?</button>
-</div>
 <div class="row justify-content-center">
     <div class="badge badge-secondary text-lg" id="bus-plate"></div>
 </div>
@@ -36,17 +29,15 @@
         <label class="custom-control-label text-dark bg-customisation-btn rounded" for="user-location">On/Off</label>
     </div>
 </div>
-<div class="row px-2 justify-content-center my-3">
-    <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load</small>
-</div>
-<div class="row px-2" style="height:130px;overflow-y:auto">
-    <div class="col-md-6 mx-auto px-2">
-            <code>
-                <div class="mx-2 pl-4" id="location-metadata" style="display:none"></div>
-                <div class="mx-2 pl-4" id="metadata-placeholder">
-                    <div id="placeholder" class="mt-4">Once turned on, your location should appear here</div>
-                </div>
-            </code>
+
+<div class="row px-2" style="height:70px;overflow-y:auto">
+    <div class="col-md-6 mx-auto px-2 text-center">
+        <div class="mx-2 pl-4" id="location-metadata" style="display:none"></div>
+        <div class="mx-2 pl-4" id="metadata-placeholder">
+            <div id="placeholder" class="mt-4">
+                <small class="font-sm text-muted font-weight-light text-center">GPS service may take a few seconds to load</small>
+            </div>
+        </div>
     </div>
 </div>
 

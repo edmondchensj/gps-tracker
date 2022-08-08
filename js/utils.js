@@ -32,9 +32,16 @@ const clearBusPlate =  function () {
 }
 
 function getBusPlate() {
-  var savedBusPlate = localStorage.getItem(busPlateStorageKey);
+  const savedBusPlate = localStorage.getItem(busPlateStorageKey);
   console.log("getbusplate: ", savedBusPlate);
   return savedBusPlate;
 }
 
-export { setInnerHTMLWithJS, goToPage, setBusPlate, clearBusPlate, getBusPlate };
+function getCurrentISOTime() {
+  // Return ISO-8601 time format (required for AWS Location batch update)
+  const date = new Date();
+  const timestamp = date.toISOString()
+  console.log("timestamp: ", timestamp)
+  return timestamp
+}
+export { setInnerHTMLWithJS, goToPage, setBusPlate, clearBusPlate, getBusPlate, getCurrentISOTime };

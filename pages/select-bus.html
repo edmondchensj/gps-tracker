@@ -8,15 +8,6 @@
         const nav = await goToPage("home");
         setBusPlate(plateNumber);
     }
-
-    // Check local storage, if present, go straight to home-screen
-    let savedBusPlate = getBusPlate();
-    console.log("Checking for previous saved bus plate", savedBusPlate);
-    if (savedBusPlate != null) {
-        console.log("Bus plate saved previously, going to main page ...")
-        const nav = await goToPage("home");
-        setBusPlate(savedBusPlate);
-    }
 </script>
 
 <div class="row px-2 justify-content-center mt-4">

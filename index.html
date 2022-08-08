@@ -25,7 +25,7 @@
             style='max-width:40px; max-height:40px; padding-bottom: 1px; filter: invert(100%);'>
     </div>
     <div class="container my-1">
-        <div class="initial-load" id="main">
+        <div id="main">
             <div class="row px-2 justify-content-center mt-4">
                 <div class="spinner-border mt-2 text-black-50" role="status">
                     <span class="sr-only">Loading...</span>
@@ -43,7 +43,7 @@
 <script src="./lib/leaflet-1.6.0/leaflet.js"></script>
 
 <!-- Amazon Cognito for Authentication -->
-<script src="./lib/aws-sdk-2.7.16.min.js"></script> 
+<script src="./lib/aws-sdk-2.1189.min.js"></script> 
 <script src="./lib/aws-cognito/amazon-cognito-auth.min.js"></script>  
 <script src="./config.js"></script>
 <script src="./lib/aws-cognito/amazon-cognito-identity.min.js"></script>
@@ -51,7 +51,7 @@
 <!-- Run validation for user session -->
 <script type="module">
     import { validateCognitoUser, getUser } from "./js/auth.js"
-    import { goToPage } from "./js/utils.js"
+    import { goToPage, getBusPlate, setBusPlate } from "./js/utils.js"
     
     window.logout = function() {
         console.log("Logging out ...")
@@ -62,13 +62,6 @@
         logout_link.style.display = "none"; 
         goToPage("login");
         history.replaceState(null, null, ' '); // clear URL hash
-    }
-
-    // Provide hidden logout route for admin
-    let path = window.location.hash;
-    console.log("current path: ", path);
-    if (path == "#/logout") {
-        logout();
     }
 
     console.log("Running Cognito user session validation")
@@ -83,9 +76,15 @@
     } else {
         logout_link.style.display = "block"; 
         const main = document.getElementById("main")
-        if (main.classList.contains("initial-load")) {
-            // Redirect to home screen if it is first time
-            main.classList.remove("initial-load");
+
+        // Check local storage, if present, go straight to home-screen
+        let savedBusPlate = getBusPlate();
+        console.log("Checking for previous saved bus plate", savedBusPlate);
+        if (savedBusPlate != null) {
+            console.log("Bus plate saved previously, going to main page ...")
+            const nav = await goToPage("home");
+            setBusPlate(savedBusPlate);
+        } else {
             goToPage("select-bus");
         }
     }

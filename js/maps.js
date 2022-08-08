@@ -1,4 +1,7 @@
-var changi = [// southwest
+import { refreshCognitoCredentials } from "./auth.js";
+import { getBusPlate, getCurrentISOTime } from "./utils.js";
+
+const changi = [// southwest
         [1.3214, 103.9729],
         // northeast
         [1.3849, 104.0192]],
@@ -8,7 +11,7 @@ var changi = [// southwest
         // northeast
         [1.41, 104.05]];
 
-var singapore_island = [//southwest
+const singapore_island = [//southwest
         [1.265206318838706, 103.71624436262216],
         //northeast
         [1.4292806607158928, 104.02705269597813]]
@@ -48,8 +51,6 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
                 timeout: 3000});
     var inner_circle = null;
     var outer_circle; 
-    var metadata_textbox = document.getElementById(metadata_id);
-    var metadata_placeholder = document.getElementById(metadata_placeholder_id);
 
     map.on('locationfound', function(e) {
         //alert('Success: Your location should now be shown on the map.')
@@ -85,25 +86,8 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
             outer_circle.setRadius(radius*magnifier);
         }
         console.log('location found');
-
-        // Update metadata textbox
-        metadata_placeholder.style.display = "none";
-        metadata_textbox.style.display = "none"; 
-        var current_metadata = metadata_textbox.innerHTML;
-        var date = new Date();
-        var timestamp = date.toDateString() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
-        var metadata = `
-                <div class="row pl-2">{</div> 
-                <div class="row pl-4">"lat": "${e.latlng.lat}", </div>
-                <div class="row pl-4">"lng": "${e.latlng.lng}", </div>
-                <div class="row pl-4">"last_update_ts": "${timestamp}" </div>
-                <div class="row pl-2">}</div>
-            `
-        if (current_metadata != "") {
-            var metadata = metadata + "," + current_metadata; 
-        }
-        metadata_textbox.innerHTML = metadata;
-        $('#'+metadata_id).fadeIn("slow");
+        let success = sendDataToLocationService(e);
+        updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, success);
     });
 
     map.on('locationerror', function(e) {
@@ -117,6 +101,77 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
     if (map._locateOptions) {
         map._locateOptions.maxZoom = map.getZoom();
     }}
+}
+
+function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, status) {
+    // Update location textbox with latest location updates
+    var metadata_textbox = document.getElementById(metadata_id);
+    var metadata_placeholder = document.getElementById(metadata_placeholder_id);
+    metadata_placeholder.style.display = "none";
+    metadata_textbox.style.display = "none"; 
+
+    let d = new Date();
+    const timeNow = d.toTimeString().substring(0,8);
+
+    const statusHTML = status ? `
+                    <div class="row mt-4 justify-content-center">
+                        <span class="spinner-grow spinner-grow-sm text-success"></span>
+                        <span class="text-success font-weight-light ml-2">Tracking in progress</span>
+                    </div>` :
+                    `
+                    <div class="row mt-4 justify-content-center">
+                        <div class="spinner-grow spinner-grow-sm text-danger"></div>
+                        <div class="text-danger font-weight-light ml-2">An error occurred</div>
+                    </div>`
+
+    const gpsAccuracy = (e==null) ? "NA" : e.accuracy;
+    var metadata = `
+        <code>
+            <div class="row pl-2 mx-auto mt-1 justify-content-center">GPS accuracy: ${gpsAccuracy.toFixed(0)} | Last update: ${timeNow} </div>
+        </code>
+        `
+
+    metadata_textbox.innerHTML = statusHTML + metadata;
+    $('#'+metadata_id).fadeIn("slow");
+}
+
+async function sendDataToLocationService(e) {
+    // Send coordinates and other metadata to AWS Location Service
+    refreshCognitoCredentials();
+    const credentials = AWS.config.credentials;
+
+    const locationClient = new AWS.Location({
+        credentials,
+        region: "ap-southeast-1"
+    });
+
+    const params = {
+        TrackerName: _config.location.trackerName,
+        Updates: [
+        {
+            DeviceId: getBusPlate(),
+            Accuracy: { 
+                Horizontal: e.accuracy
+            },
+            Position: [e.latlng.lng, e.latlng.lat],
+            SampleTime: getCurrentISOTime(),
+            PositionProperties: {
+                "timestamp": Date.now().toString() // epoch time
+            }
+        }
+        ]
+    } 
+    console.log("Sending data to Amazon Location with params: ", params);
+    locationClient.batchUpdateDevicePosition(params, function(err, data) {
+        if (err) {
+            console.log("An error occurred when updating device position", err, err.stack); // an error occurred
+            return false;
+        } else {
+            console.log("Successful response", data);           // successful response
+            return true;
+        }
+    })
+    
 }
 
 function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {

@@ -33,6 +33,24 @@ function validateCognitoUser() {
             }
             console.log('session validity: ' + session.isValid());
 
+            AWS.config.region = 'ap-southeast-1'; // Region
+            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId: 'ap-southeast-1:2c9e16dd-378c-4066-aa44-e3501e3581e0',
+                Logins: {
+                    [_config.cognito.cognitoIdentityProviderName]: session.getIdToken().getJwtToken()
+                }
+            });
+
+            //refreshes credentials using AWS.CognitoIdentity.getCredentialsForIdentity(); migth be better to replace it with our sub function
+            AWS.config.credentials.refresh(error => {
+                if (error) {
+                    console.error(error);
+                } else {
+                    console.log('Successfully refreshed credentials!');
+                }
+            });
+
+            console.log("Cognito Identity Creds: ", AWS.config.region, AWS.config.credentials);
             // Get user attributes for info
 			cognitoUser.getUserAttributes(function(err, result) {
 				if (err) {
@@ -50,4 +68,37 @@ function validateCognitoUser() {
     //}
 }
 
-export { validateCognitoUser, getUser };
+function refreshCognitoCredentials() {
+    const cognitoUser = getUser();
+    // session = cognitoUser.getSession();
+    let success = cognitoUser.getSession(function(err, session) {
+        if (err) {
+            alert(err);
+            return false;
+        }
+        
+        console.log('session validity: ' + session.isValid());
+        const refresh_token = session.getRefreshToken();  
+        console.log("Retrieved refresh token: ", refresh_token);
+
+        if (AWS.config.credentials.needsRefresh()) {
+            cognitoUser.refreshSession(refresh_token, (err, session) => {
+                if(err) {
+                    console.log(err);
+                } 
+                else {
+                    AWS.config.credentials.params.Logins[_config.cognito.cognitoIdentityProviderName]  = session.getIdToken().getJwtToken();
+                    AWS.config.credentials.refresh((err)=> {
+                        if(err)  {
+                            console.log(err);
+                        }
+                        else{
+                            console.log("TOKEN SUCCESSFULLY UPDATED");
+                        }
+                    });
+                }
+            });
+        }})
+}
+
+export { validateCognitoUser, getUser, refreshCognitoCredentials };
