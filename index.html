@@ -19,8 +19,8 @@
 
 <body>
 
-    <div class="font-weight-light text-center bg-primary py-2">
-        <img class='px-1' 
+    <div class="font-weight-light bg-primary text-center py-2">
+        <img class='mx-auto' 
             src="./assets/bus.png" 
             style='max-width:40px; max-height:40px; padding-bottom: 1px; filter: invert(100%);'>
     </div>
@@ -31,6 +31,10 @@
                     <span class="sr-only">Loading...</span>
                 </div>
             </div>
+        </div>
+
+        <div class="row">
+            <button class="btn btn-link text-muted ml-auto mt-3 mr-2" id="logout" onclick="logout()">Logout</button>
         </div>
     </div>
 </body>
@@ -49,10 +53,8 @@
     import { validateCognitoUser, getUser } from "./js/auth.js"
     import { goToPage } from "./js/utils.js"
     
-    // Check if admin has accessed hidden logout route
-    let path = window.location.hash;
-    console.log("current path: ", path);
-    if (path == "#/logout") {
+    window.logout = function() {
+        console.log("Logging out ...")
         var cognitoUser = getUser();
         if (cognitoUser != null) {
             cognitoUser.signOut();
@@ -61,15 +63,24 @@
         history.replaceState(null, null, ' '); // clear URL hash
     }
 
+    // Provide hidden logout route for admin
+    let path = window.location.hash;
+    console.log("current path: ", path);
+    if (path == "#/logout") {
+        logout();
+    }
+
     console.log("Running Cognito user session validation")
     const success = validateCognitoUser();
     console.log("Cognito user validation success: ", success);
 
+    const logout_link = document.getElementById("logout");
     if (!success) {
         console.log("Cognito user invalid, redirecting to login");
-        // Redirect to login.html if user session is null or invalid
+        logout_link.style.display = "none"; 
         goToPage("login");
     } else {
+        logout_link.style.display = "block"; 
         const main = document.getElementById("main")
         if (main.classList.contains("initial-load")) {
             // Redirect to home screen if it is first time
