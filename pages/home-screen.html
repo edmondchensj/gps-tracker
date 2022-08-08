@@ -6,6 +6,12 @@
 
     console.log('activating map GPS location service')
     renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
+
+    const credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: _config.cognito.identityPoolId
+    });
+    console.log("Cognito Identity Creds: ", credentials);
+    
 </script>
 
 <!-- Return to select bus page -->

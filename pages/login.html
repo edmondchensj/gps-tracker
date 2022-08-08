@@ -46,6 +46,13 @@
         cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: async function (result) {
                 var accessToken = result.getAccessToken().getJwtToken();
+                const credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId: _config.cognito.identityPoolId,
+                Logins : {
+                    'cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_f78ln7RZL': result.getIdToken().getJwtToken()
+                }
+            });
+            console.log("Cognito Identity Creds: ", credentials);
                 console.log(accessToken);	
                 console.log("User authenticated. Logging in...")
                 const nav = await goToPage("select-bus");

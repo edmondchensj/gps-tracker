@@ -29,7 +29,7 @@ function validateCognitoUser() {
                 return false;
             }
             console.log('session validity: ' + session.isValid());
-            
+
 			cognitoUser.getUserAttributes(function(err, result) {
 				if (err) {
 					console.log(err);
