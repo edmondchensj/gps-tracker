@@ -55,6 +55,7 @@
             console.log("Cognito Identity Creds: ", credentials);
                 console.log(accessToken);	
                 console.log("User authenticated. Logging in...")
+                logout_link.style.display = "block"; 
                 const nav = await goToPage("select-bus");
             },
 
