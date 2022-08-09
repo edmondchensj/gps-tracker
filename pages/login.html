@@ -11,7 +11,7 @@
                 <input class="form-control" type="password" id="inputPassword"  placeholder="Password" name="password" required>    
             </div>              
             
-            <button class="btn btn-primary block" type="button" onclick="signInButton(event)">Sign in</button>
+            <button id="signInButton" class="btn btn-primary block" type="button" onclick="onSignInButtonClick(event)">Sign in</button>
     
         </form>
     </div>
@@ -22,8 +22,12 @@
     import { getUser } from "./js/auth.js";
     import { goToPage, setBusPlate } from "./js/utils.js";
 
-    window.signInButton = function(event) {
-    
+    window.onSignInButtonClick = function(event) {
+        const buttonText = document.getElementById("signInButton").innerText;
+        document.getElementById("signInButton").innerHTML = `
+            <div class="spinner-border spinner-border-sm" role="status"></div>    
+        `
+        
         var authenticationData = {
             Username : document.getElementById("inputUsername").value,
             Password : document.getElementById("inputPassword").value,
@@ -54,6 +58,7 @@
             },
 
             onFailure: function(err) {
+                document.getElementById("signInButton").innerHTML = buttonText;
                 alert(err.message || JSON.stringify(err));
             },
         });

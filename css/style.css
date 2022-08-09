@@ -43,6 +43,10 @@
     background-color: rgb(52, 132, 94);
 }
 
+.btn-primary:not(:disabled):not(:disabled):active, .btn-primary:hover  {
+    background-color:rgb(73, 196, 138) !important;
+}
+
 .bg-primary {
     background-color: #58b893 !important;
 }
