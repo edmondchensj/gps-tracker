@@ -1,4 +1,4 @@
-import { refreshCognitoCredentials } from "./auth.js";
+import { getUser, refreshCognitoCredentials } from "./auth.js";
 import { getBusPlate, getCurrentISOTime } from "./utils.js";
 
 const changi = [// southwest
@@ -52,7 +52,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
     var inner_circle = null;
     var outer_circle; 
 
-    map.on('locationfound', function(e) {
+    map.on('locationfound', async function(e) {
         //alert('Success: Your location should now be shown on the map.')
         var radius = e.accuracy;
         var magnifier = 1.1;
@@ -86,7 +86,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
             outer_circle.setRadius(radius*magnifier);
         }
         console.log('location found');
-        let success = sendDataToLocationService(e);
+        let success = await sendDataToLocationService(e);
         updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, success);
     });
 
@@ -114,21 +114,18 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
     const timeNow = d.toTimeString().substring(0,8);
 
     const statusHTML = status ? `
-                    <div class="row mt-4 justify-content-center">
+                    <div class="row justify-content-center">
                         <span class="spinner-grow spinner-grow-sm text-success"></span>
                         <span class="text-success font-weight-light ml-2">Tracking in progress</span>
                     </div>` :
                     `
-                    <div class="row mt-4 justify-content-center">
+                    <div class="row justify-content-center">
                         <div class="spinner-grow spinner-grow-sm text-danger"></div>
-                        <div class="text-danger font-weight-light ml-2">An error occurred</div>
+                        <div class="text-danger font-weight-light ml-2">An error occurred!</div>
                     </div>`
 
-    const gpsAccuracy = (e==null) ? "NA" : e.accuracy;
     var metadata = `
-        <code>
-            <div class="row pl-2 mx-auto mt-1 justify-content-center">GPS accuracy: ${gpsAccuracy.toFixed(0)} | Last update: ${timeNow} </div>
-        </code>
+            <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>
         `
 
     metadata_textbox.innerHTML = statusHTML + metadata;
@@ -137,14 +134,30 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
 
 async function sendDataToLocationService(e) {
     // Send coordinates and other metadata to AWS Location Service
-    refreshCognitoCredentials();
+    
+    // Get credentials
+    const cognitoUser = getUser();
+    if (cognitoUser == null) return false;
+    cognitoUser.getSession(function(err, session) {
+        if (err) {
+            alert(err);
+            return false;
+        } else {
+            refreshCognitoCredentials(session, cognitoUser);
+        }})
     const credentials = AWS.config.credentials;
 
+    // Initialise Location client
     const locationClient = new AWS.Location({
         credentials,
         region: "ap-southeast-1"
     });
 
+    // Test parameters (ignore)
+    const insideGeofence = [103.98457177301275, 1.3395123571936962]
+    const outsideGeofence = [103.98530940713842,1.3405608558355409]
+
+    // Update API params
     const params = {
         TrackerName: _config.location.trackerName,
         Updates: [
@@ -155,23 +168,26 @@ async function sendDataToLocationService(e) {
             },
             Position: [e.latlng.lng, e.latlng.lat],
             SampleTime: getCurrentISOTime(),
-            PositionProperties: {
-                "timestamp": Date.now().toString() // epoch time
-            }
+            // PositionProperties: {
+            //     "timestamp": Date.now().toString() // epoch time
+            // }
         }
         ]
     } 
     console.log("Sending data to Amazon Location with params: ", params);
-    locationClient.batchUpdateDevicePosition(params, function(err, data) {
-        if (err) {
-            console.log("An error occurred when updating device position", err, err.stack); // an error occurred
-            return false;
-        } else {
-            console.log("Successful response", data);           // successful response
-            return true;
-        }
-    })
-    
+
+    // Call location client to update position, using async/await as recommended in the docs
+    try {
+        const data = await locationClient.batchUpdateDevicePosition(params).promise();
+        console.log("Batch update response: ", data);
+        const statusCode = data.$response.httpResponse.statusCode
+        console.log("Status code: ", statusCode);
+        if (statusCode!=200) return false;
+        else return true;
+    } catch (error) {
+        console.log("An error occurred when updating device position", error, error.stack); // an error occurred
+        return false;
+    }
 }
 
 function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {

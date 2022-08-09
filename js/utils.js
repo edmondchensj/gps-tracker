@@ -1,5 +1,6 @@
-var setInnerHTMLWithJS = function(elm, html) {
+var setInnerHTMLWithJS = function(div_id, html) {
     // Set inner HTML and run any script tags 
+    const elm = document.getElementById(div_id);
     elm.innerHTML = html;
     Array.from(elm.querySelectorAll("script")).forEach( oldScript => {
       const newScript = document.createElement("script");
@@ -12,11 +13,10 @@ var setInnerHTMLWithJS = function(elm, html) {
 
 const goToPage = async function (routeKey) {
   const routes = {"home": "/pages/home-screen.html",
-                  "login": "/pages/login.html",
-                  "select-bus": "/pages/select-bus.html"}
+                  "login": "/pages/login.html"}
   const html = await fetch(routes[routeKey]).then((data) => data.text());
-  const main = document.getElementById("main");
-  setInnerHTMLWithJS(main, html);
+
+  setInnerHTMLWithJS("main", html);
 }
 
 const busPlateStorageKey = "bus-plate";

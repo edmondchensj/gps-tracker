@@ -1,3 +1,5 @@
+import { goToPage } from "./utils.js";
+
 function getUserPool() {
     // Authenticate with Amazon Cognito to retrieve user pool
     var data = { 
@@ -31,26 +33,9 @@ function validateCognitoUser() {
                 alert(err);
                 return false;
             }
-            console.log('session validity: ' + session.isValid());
+            
+            refreshCognitoCredentials(session, cognitoUser);
 
-            AWS.config.region = 'ap-southeast-1'; // Region
-            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                IdentityPoolId: 'ap-southeast-1:2c9e16dd-378c-4066-aa44-e3501e3581e0',
-                Logins: {
-                    [_config.cognito.cognitoIdentityProviderName]: session.getIdToken().getJwtToken()
-                }
-            });
-
-            //refreshes credentials using AWS.CognitoIdentity.getCredentialsForIdentity(); migth be better to replace it with our sub function
-            AWS.config.credentials.refresh(error => {
-                if (error) {
-                    console.error(error);
-                } else {
-                    console.log('Successfully refreshed credentials!');
-                }
-            });
-
-            console.log("Cognito Identity Creds: ", AWS.config.region, AWS.config.credentials);
             // Get user attributes for info
 			cognitoUser.getUserAttributes(function(err, result) {
 				if (err) {
@@ -68,37 +53,51 @@ function validateCognitoUser() {
     //}
 }
 
-function refreshCognitoCredentials() {
-    const cognitoUser = getUser();
-    // session = cognitoUser.getSession();
-    let success = cognitoUser.getSession(function(err, session) {
-        if (err) {
-            alert(err);
-            return false;
-        }
-        
-        console.log('session validity: ' + session.isValid());
-        const refresh_token = session.getRefreshToken();  
-        console.log("Retrieved refresh token: ", refresh_token);
 
-        if (AWS.config.credentials.needsRefresh()) {
-            cognitoUser.refreshSession(refresh_token, (err, session) => {
-                if(err) {
-                    console.log(err);
-                } 
-                else {
-                    AWS.config.credentials.params.Logins[_config.cognito.cognitoIdentityProviderName]  = session.getIdToken().getJwtToken();
-                    AWS.config.credentials.refresh((err)=> {
-                        if(err)  {
-                            console.log(err);
-                        }
-                        else{
-                            console.log("TOKEN SUCCESSFULLY UPDATED");
-                        }
-                    });
-                }
-            });
-        }})
+function refreshCognitoCredentials(session, cognitoUser) {
+    // Checks that AWS credentials require refreshing, and then refreshes both Cognito session and AWS credentials
+    console.log('Session validity: ' + session.isValid());
+    const refresh_token = session.getRefreshToken();  
+
+    if (AWS.config.credentials == null || AWS.config.credentials.needsRefresh()) {
+        console.log("AWS credentials require refreshing.")
+        cognitoUser.refreshSession(refresh_token, (err, session) => {
+            if(err) {
+                console.log("An error occurred when refreshing AWS credentials: ", err);
+            } 
+            else {
+                console.log("Re-initialising AWS credentials")
+                AWS.config.region = 'ap-southeast-1'; // Region
+                AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                    IdentityPoolId: _config.cognito.identityPoolId,
+                    Logins: {
+                        [_config.cognito.cognitoIdentityProviderName]: session.getIdToken().getJwtToken()
+                    }
+                });
+                console.log("New Cognito Identity credentials: ", AWS.config.credentials);
+                AWS.config.credentials.refresh((err)=> {
+                    if(err)  {
+                        console.log("Credentials could not be refreshed: ", err);
+                    }
+                    else{
+                        console.log("Credentials successfully updated");
+                    }
+                });
+            }
+        });
+    }
 }
 
-export { validateCognitoUser, getUser, refreshCognitoCredentials };
+function logoutUser() {
+    if (confirm("Are you sure you wish to logout?") == true) {
+        console.log("Logging out ...")
+        var cognitoUser = getUser();
+        if (cognitoUser != null) {
+            cognitoUser.signOut();
+        }
+        document.getElementById("logout").style.display = "none"; 
+        goToPage("login");
+        history.replaceState(null, null, ' '); // clear URL hash if present   
+    }
+}
+export { validateCognitoUser, getUser, refreshCognitoCredentials, logoutUser };

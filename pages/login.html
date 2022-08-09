@@ -19,7 +19,9 @@
 
 
 <script type="module">
-    import { goToPage } from "./js/utils.js"
+    import { getUser } from "./js/auth.js";
+    import { goToPage, setBusPlate } from "./js/utils.js";
+
     window.signInButton = function(event) {
     
         var authenticationData = {
@@ -45,25 +47,10 @@
         event.preventDefault(); // prevent page from refreshing before authentication is completed, causing network errors
         cognitoUser.authenticateUser(authenticationDetails, {
             onSuccess: async function (result) {
-                var accessToken = result.getAccessToken().getJwtToken();
-                // const credentials = new AWS.CognitoIdentityCredentials({
-                //     IdentityPoolId: _config.cognito.identityPoolId,
-                //     Logins : {
-                //         'cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_f78ln7RZL': result.getIdToken().getJwtToken()
-                //     },
-                //     region: 'ap-southeast-1'
-                // });
-                // Initialize the Amazon Cognito credentials provider
-                AWS.config.region = 'ap-southeast-1'; // Region
-                AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-                    IdentityPoolId: 'ap-southeast-1:2c9e16dd-378c-4066-aa44-e3501e3581e0',
-                });
-                console.log("Cognito Identity Creds: ", AWS.config.region, AWS.config.credentials);
-                console.log(accessToken);	
                 console.log("User authenticated. Logging in...")
-                const nav = await goToPage("select-bus");
-                const logout_link = document.getElementById("logout");
-                logout_link.style.display = "block"; 
+                const nav = await goToPage("home");
+                setBusPlate(getUser().username);
+                document.getElementById("logout").style.display = "block"; 
             },
 
             onFailure: function(err) {
@@ -71,5 +58,4 @@
             },
         });
     }
-    console.log("Loaded login page")
 </script>
