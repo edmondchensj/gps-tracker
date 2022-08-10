@@ -140,7 +140,7 @@ async function sendDataToLocationService(e) {
     
     // Accuracy check -- dont transmit data if accuracy > 100
     console.log("Current GPS accuracy: ", e.accuracy);
-    if (e.accuracy > 100) {
+    if (e.accuracy > _config.gps.maxAccuracy) {
         console.log("GPS error margin too high, ignoring values and waiting for next re-try...")
         return null;
     }

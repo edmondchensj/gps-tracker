@@ -8,5 +8,8 @@ window._config = {
     },
     location: {
         trackerName: "bus_tracker"
+    },
+    gps: {
+        maxAccuracy: 250
     }
 };
