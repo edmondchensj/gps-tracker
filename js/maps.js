@@ -53,10 +53,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
     var outer_circle; 
 
     map.on('locationfound', async function(e) {
-        //alert('Success: Your location should now be shown on the map.')
         var radius = e.accuracy;
-        var magnifier = 1.1;
-        //var popupContent = "You are within " + radius + " meters from here.";
 
         // Create new marker if location found for the first time
         if (inner_circle == null) {
@@ -68,7 +65,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
                             fillOpacity: 0.8}).addTo(map);
             //inner_circle.bindPopup(popupContent).openPopup();
             outer_circle = new L.circle(e.latlng, {
-                            radius: radius*magnifier,
+                            radius: radius,
                             weight: 3,
                             color: '#3388ff',
                             fillColor: '#3388ff',
@@ -83,7 +80,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
             //inner_circle.getPopup().setContent(popupContent); 
             inner_circle.setLatLng(e.latlng);
             outer_circle.setLatLng(e.latlng);
-            outer_circle.setRadius(radius*magnifier);
+            outer_circle.setRadius(radius);
         }
         console.log('location found');
         let success = await sendDataToLocationService(e);
@@ -113,28 +110,41 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
     let d = new Date();
     const timeNow = d.toTimeString().substring(0,8);
 
-    const statusHTML = status ? `
-                    <div class="row justify-content-center">
-                        <span class="spinner-grow spinner-grow-sm text-success"></span>
-                        <span class="text-success font-weight-light ml-2">Tracking in progress</span>
-                    </div>` :
+    if (status == null) {
+        metadata_textbox.innerHTML = `<div class="row justify-content-center">
+                                <small class="font-weight-light text-muted ml-2">Please hold as we try to locate your position ...</small>
+                                <small class="font-weight-light text-muted block">(Current accuracy: ${e.accuracy.toFixed(1)} metres)</small>
+                            </div>`
+    } else {
+        const statusHTML = status ? `
+                        <div class="row justify-content-center">
+                            <span class="spinner-grow spinner-grow-sm text-success"></span>
+                            <span class="text-success font-weight-light ml-2">Tracking in progress</span>
+                        </div>` :
+                        `
+                        <div class="row justify-content-center">
+                            <div class="spinner-grow spinner-grow-sm text-danger"></div>
+                            <div class="text-danger font-weight-light ml-2">An error occurred!</div>
+                        </div>`
+        var metadata = `
+                        <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>
                     `
-                    <div class="row justify-content-center">
-                        <div class="spinner-grow spinner-grow-sm text-danger"></div>
-                        <div class="text-danger font-weight-light ml-2">An error occurred!</div>
-                    </div>`
+        metadata_textbox.innerHTML = statusHTML + metadata;
+    }
 
-    var metadata = `
-            <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>
-        `
-
-    metadata_textbox.innerHTML = statusHTML + metadata;
     $('#'+metadata_id).fadeIn("slow");
 }
 
 async function sendDataToLocationService(e) {
-    // Send coordinates and other metadata to AWS Location Service
+    // Send coordinates and other metadata to AWS Location Service if accuracy value <= 100
     
+    // Accuracy check -- dont transmit data if accuracy > 100
+    console.log("Current GPS accuracy: ", e.accuracy);
+    if (e.accuracy > 100) {
+        console.log("GPS error margin too high, ignoring values and waiting for next re-try...")
+        return null;
+    }
+
     // Get credentials
     const cognitoUser = getUser();
     if (cognitoUser == null) return false;
@@ -157,7 +167,11 @@ async function sendDataToLocationService(e) {
     const insideGeofence = [103.98457177301275, 1.3395123571936962]
     const outsideGeofence = [103.98530940713842,1.3405608558355409]
 
-    // Update API params
+    // Parse service type param using username
+    const username = cognitoUser.username;
+    const serviceType = (username.includes("landside")) ? "landside" : "airside";
+
+    // Set API params
     const params = {
         TrackerName: _config.location.trackerName,
         Updates: [
@@ -169,7 +183,7 @@ async function sendDataToLocationService(e) {
             Position: [e.latlng.lng, e.latlng.lat],
             SampleTime: getCurrentISOTime(),
             PositionProperties: {
-                "field1": "airside" // type of service: airside or landside
+                "field1": serviceType // type of service: airside or landside
             }
         }
         ]
