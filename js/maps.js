@@ -168,9 +168,9 @@ async function sendDataToLocationService(e) {
             },
             Position: [e.latlng.lng, e.latlng.lat],
             SampleTime: getCurrentISOTime(),
-            // PositionProperties: {
-            //     "timestamp": Date.now().toString() // epoch time
-            // }
+            PositionProperties: {
+                "field1": "airside" // type of service: airside or landside
+            }
         }
         ]
     } 
