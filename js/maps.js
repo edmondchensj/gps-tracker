@@ -1,5 +1,4 @@
-import { getUser, refreshCognitoCredentials } from "./auth.js";
-import { getBusPlate, getCurrentISOTime } from "./utils.js";
+import { sendDataToLocationService, stopService } from "./api.js";
 
 const changi = [// southwest
         [1.3214, 103.9729],
@@ -89,6 +88,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
 
     map.on('locationerror', function(e) {
         console.log('location not found');
+        updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, null);
     });
 
     // Allow user to modify zoom level 
@@ -110,99 +110,36 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
     let d = new Date();
     const timeNow = d.toTimeString().substring(0,8);
 
-    if (status == null) {
+    if (status == null && e != null) {
         metadata_textbox.innerHTML = `<div class="row justify-content-center">
-                                <small class="font-weight-light text-muted ml-2">Please hold as we try to locate your position ...</small>
+                                <small class="font-weight-light text-muted ml-2">We found your location but accuracy is poor...</small>
                                 <small class="font-weight-light text-muted block">(Current accuracy: ${e.accuracy.toFixed(1)} metres)</small>
+                            </div>`
+    } else if (status == null) {
+        metadata_textbox.innerHTML = `<div class="row justify-content-center">
+                                <small class="font-weight-light text-muted ml-2">We're still searching for your location ...</small>
                             </div>`
     } else {
         const statusHTML = status ? `
                         <div class="row justify-content-center">
                             <span class="spinner-grow spinner-grow-sm text-success"></span>
                             <span class="text-success font-weight-light ml-2">Tracking in progress</span>
-                        </div>` :
+                        </div>
+                        <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>` :
                         `
                         <div class="row justify-content-center">
                             <div class="spinner-grow spinner-grow-sm text-danger"></div>
                             <div class="text-danger font-weight-light ml-2">An error occurred!</div>
+                        </div>
+                        <div class="row justify-content-center">
+                            <div class="text-muted font-weight-light">Press button again or contact the admin</div>
                         </div>`
-        var metadata = `
-                        <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>
-                    `
-        metadata_textbox.innerHTML = statusHTML + metadata;
+        metadata_textbox.innerHTML = statusHTML;
     }
 
     $('#'+metadata_id).fadeIn("slow");
 }
 
-async function sendDataToLocationService(e) {
-    // Send coordinates and other metadata to AWS Location Service if accuracy value <= 100
-    
-    // Accuracy check -- dont transmit data if accuracy > 100
-    console.log("Current GPS accuracy: ", e.accuracy);
-    if (e.accuracy > _config.gps.maxAccuracy) {
-        console.log("GPS error margin too high, ignoring values and waiting for next re-try...")
-        return null;
-    }
-
-    // Get credentials
-    const cognitoUser = getUser();
-    if (cognitoUser == null) return false;
-    cognitoUser.getSession(function(err, session) {
-        if (err) {
-            alert(err);
-            return false;
-        } else {
-            refreshCognitoCredentials(session, cognitoUser);
-        }})
-    const credentials = AWS.config.credentials;
-
-    // Initialise Location client
-    const locationClient = new AWS.Location({
-        credentials,
-        region: "ap-southeast-1"
-    });
-
-    // Test parameters (ignore)
-    const insideGeofence = [103.98457177301275, 1.3395123571936962]
-    const outsideGeofence = [103.98530940713842,1.3405608558355409]
-
-    // Parse service type param using username
-    const username = cognitoUser.username;
-    const serviceType = (username.includes("landside")) ? "landside" : "airside";
-
-    // Set API params
-    const params = {
-        TrackerName: _config.location.trackerName,
-        Updates: [
-        {
-            DeviceId: getBusPlate(),
-            Accuracy: { 
-                Horizontal: e.accuracy
-            },
-            Position: [e.latlng.lng, e.latlng.lat],
-            SampleTime: getCurrentISOTime(),
-            PositionProperties: {
-                "field1": serviceType // type of service: airside or landside
-            }
-        }
-        ]
-    } 
-    console.log("Sending data to Amazon Location with params: ", params);
-
-    // Call location client to update position, using async/await as recommended in the docs
-    try {
-        const data = await locationClient.batchUpdateDevicePosition(params).promise();
-        console.log("Batch update response: ", data);
-        const statusCode = data.$response.httpResponse.statusCode
-        console.log("Status code: ", statusCode);
-        if (statusCode!=200) return false;
-        else return true;
-    } catch (error) {
-        console.log("An error occurred when updating device position", error, error.stack); // an error occurred
-        return false;
-    }
-}
 
 function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {
     // Stop GPS tracking & remove GPS leaflet layer group
@@ -238,12 +175,18 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
 
     // Start locating user if toggle is on
     var toggle_button = $('#' + toggle_btn_id);
-    toggle_button.on('change', function() {
+    toggle_button.on('change', async function() {
         if (toggle_button.is(':checked')) {
             showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id);
         }
         else {
             stopLocate(map, gps_group, metadata_id, metadata_placeholder_id);
+            stopService().then((resp) => {
+                if (resp.status != 200) {
+                    console.log("Error in stopService API call. Status code: ", resp.status);
+                    updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, false);
+                }
+              });
         }
     })
 
