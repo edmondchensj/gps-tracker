@@ -181,12 +181,12 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
         }
         else {
             stopLocate(map, gps_group, metadata_id, metadata_placeholder_id);
-            stopService().then((resp) => {
-                if (resp.status != 200) {
-                    console.log("Error in stopService API call. Status code: ", resp.status);
-                    updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, false);
-                }
-              });
+            const resp = await stopService();
+        
+            if (resp.status != 200) {
+                console.log("Error in stopService API call. Status code: ", resp.status);
+                updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, false);
+            }
         }
     })
 

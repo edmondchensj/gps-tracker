@@ -31,7 +31,6 @@ const clearBusPlate =  function () {
 
 function getBusPlate() {
   const savedBusPlate = localStorage.getItem(busPlateStorageKey);
-  console.log("getbusplate: ", savedBusPlate);
   return savedBusPlate;
 }
 
@@ -39,7 +38,6 @@ function getCurrentISOTime() {
   // Return ISO-8601 time format (required for AWS Location batch update)
   const date = new Date();
   const timestamp = date.toISOString()
-  console.log("timestamp: ", timestamp)
   return timestamp
 }
 

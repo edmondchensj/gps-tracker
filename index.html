@@ -64,6 +64,7 @@
 
     // Custom Routing
     const success = validateCognitoUser();
+    console.log("Cognito user session valid? ", success)
     const logout_link = document.getElementById("logout");
     if (!success) {
         console.log("Cognito user invalid, redirecting to login");
