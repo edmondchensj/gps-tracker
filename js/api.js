@@ -17,11 +17,11 @@ async function stopService() {
         },
         referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
         body: JSON.stringify({
-            "Authorization": "4VFv%tfoM19G@sj1",
+            "Authorization": _config.apiKeys.stopService,
             "BusId": getBusPlate()
         })
     });
-    console.log("Response: ", response);
+    console.log("StopService API Response: ", response);
     return response; 
 }
 

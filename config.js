@@ -14,5 +14,8 @@ window._config = {
     },
     apiUrls: {
         stopService: "https://npanq82o3m.execute-api.ap-southeast-1.amazonaws.com/stop-service"
+    },
+    apiKeys: {
+        stopService: "4VFv%tfoM19G@sj1"
     }
 };
