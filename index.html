@@ -18,13 +18,16 @@
 </head>
 
 <body>
-
+    
     <div class="font-weight-light bg-primary text-center py-2">
         <img class='mx-auto' 
             src="./assets/bus.png" 
             style='max-width:40px; max-height:40px; padding-bottom: 1px; filter: invert(100%);'>
         <small class="font-weight-light text-light block mt-1" style="letter-spacing:3px;">CHANGI AIRPORT</small>
     </div>
+    
+    <div id="wake-lock-alert"></div>
+
     <div class="container my-1">
         <div id="main">
             <div class="row px-2 justify-content-center mt-4">
@@ -37,6 +40,7 @@
         <div class="row justify-content-center">
             <button class="btn btn-sm btn-link text-muted mt-4" id="logout" onclick="logout()">Logout</button>
         </div>
+        
     </div>
 </body>
 
@@ -52,7 +56,7 @@
 <!-- Run validation for user session -->
 <script type="module">
     import { validateCognitoUser, getUser, logoutUser } from "./js/auth.js"
-    import { goToPage, getBusPlate, setBusPlate } from "./js/utils.js"
+    import { goToPage, getBusPlate, setBusPlate, setScreenWakeLock } from "./js/utils.js"
     
     window.logout = function() {
         logoutUser();
@@ -67,7 +71,12 @@
         goToPage("login");
     } else {
         logout_link.style.display = "block"; 
-        const __ = await goToPage("home");
-        setBusPlate(getUser().username);
+        const username = getUser().username;
+        console.log("username is ", username);
+        goToPage("home");
+        setBusPlate(username);
     }
+
+    // Wake lock to prevent screen from sleeping
+    setScreenWakeLock();
 </script>

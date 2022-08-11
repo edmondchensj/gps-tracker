@@ -1,6 +1,9 @@
 <!-- Run map -->
 <script type="module">
     import { createMap, renderMap } from "./js/maps.js";
+    import { getBusPlate } from "./js/utils.js";
+
+    document.getElementById("bus-plate").textContent = getBusPlate();
 
     console.log("initialising map");
     var map = createMap("map");
@@ -8,16 +11,6 @@
     console.log('activating map GPS location service')
     renderMap(map, "user-location", "location-metadata", "metadata-placeholder")
 
-</script>
-
-<!-- Return to select bus page -->
-<script type="module">
-    import { goToPage, clearBusPlate } from "./js/utils.js"
-
-    window.returnToSelectBus = async function () {
-        goToPage("select-bus");
-        clearBusPlate();
-    }
 </script>
 
 <div class="row justify-content-center">
