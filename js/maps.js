@@ -112,8 +112,8 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
 
     if (status == null && e != null) {
         metadata_textbox.innerHTML = `<div class="row justify-content-center">
-                                <small class="font-weight-light text-muted ml-2">We found your location but accuracy is poor...</small>
-                                <small class="font-weight-light text-muted block">(Current accuracy: ${e.accuracy.toFixed(1)} metres)</small>
+                                <small class="font-weight-light text-muted ml-2">We found your location but signal is too weak. Please wait ...</small>
+                                <small class="font-weight-light text-muted block">(Current accuracy: ${e.accuracy.toFixed(0)} metres)</small>
                             </div>`
     } else if (status == null) {
         metadata_textbox.innerHTML = `<div class="row justify-content-center">
