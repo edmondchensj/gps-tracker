@@ -45,6 +45,8 @@ function getCurrentISOTime() {
 
 async function setScreenWakeLock() {
   // Checks whether browser has wake-lock function and triggers wakelock if available
+  // Wake-lock alert messages are commented out as iOS devices do not support wake-lock
+
   const wakeLockDiv = document.getElementById("wake-lock-alert");
   var isSupported = false;
 
@@ -54,9 +56,9 @@ async function setScreenWakeLock() {
     isSupported = true;
   } else {
     console.log("Wake lock not supported");
-    wakeLockDiv.innerHTML = `
-      <div class="alert alert-danger text-center">This browser does not support Wake-lock and may result in the app going to sleep. <br>Please use a different browser (Recommended: Chrome).</div>
-    `;
+    // wakeLockDiv.innerHTML = `
+    //   <div class="alert alert-danger text-center">This browser does not support Wake-lock and may result in the app going to sleep. <br>Please use a different browser (Recommended: Chrome).</div>
+    // `;
   }
   
   if (isSupported) {
@@ -68,11 +70,11 @@ async function setScreenWakeLock() {
       wakeLock = await navigator.wakeLock.request('screen');
       console.log('Wake Lock enabled!');
     } catch (err) {
-      console.log("Error occurred while enabling wake-lock: ", err)
       // The Wake Lock request has failed - usually system related, such as battery.
-      wakeLockDiv.innerHTML = `
-        <div class="alert alert-danger text-center">An error occurred when enabling wake-lock. Please make sure the device is charging. </div>
-      `;
+      console.log("Error occurred while enabling wake-lock: ", err)
+      // wakeLockDiv.innerHTML = `
+      //   <div class="alert alert-danger text-center">An error occurred when enabling wake-lock. Please make sure the device is charging. </div>
+      // `;
     }
 
     // Create listener to re-activate wake-lock if visibility of page changed (inactive to active) and wake-lock was released for some reason
