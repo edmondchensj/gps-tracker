@@ -54,6 +54,22 @@ function validateCognitoUser() {
 }
 
 
+function getCognitoTokens(cognitoUser) {
+    // Automatically refresh session and return valid access token
+    const tokens = cognitoUser.getSession(function(err, data) {
+        if (err) {
+          // Prompt the user to reauthenticate by hand...
+        } else {
+          const cognitoUserSession = data;
+          const idToken = cognitoUserSession.getIdToken().jwtToken;
+          const accessToken = cognitoUserSession.getAccessToken().jwtToken;
+          return {"accessToken": accessToken, 
+                "idToken": idToken}
+        }
+      });
+    return tokens;
+}
+
 function refreshCognitoCredentials(session, cognitoUser) {
     // Checks that AWS credentials require refreshing, and then refreshes both Cognito session and AWS credentials
     console.log('Session validity: ' + session.isValid());
@@ -100,4 +116,4 @@ function logoutUser() {
         history.replaceState(null, null, ' '); // clear URL hash if present   
     }
 }
-export { validateCognitoUser, getUser, refreshCognitoCredentials, logoutUser };
+export { validateCognitoUser, getUser, refreshCognitoCredentials, logoutUser, getCognitoTokens };

@@ -11,5 +11,8 @@ window._config = {
     },
     gps: {
         maxAccuracy: 250
+    },
+    apiUrls: {
+        stopService: "https://npanq82o3m.execute-api.ap-southeast-1.amazonaws.com/stop-service"
     }
 };
