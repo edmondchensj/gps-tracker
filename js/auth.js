@@ -23,7 +23,6 @@ function validateCognitoUser() {
     // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
     var cognitoUser = getUser();
     
-	//window.onload = function() {
     if (cognitoUser != null) {
         console.log("Cognito user not null. Refreshing session to keep user logged in.")
         

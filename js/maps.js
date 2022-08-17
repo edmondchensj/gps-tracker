@@ -50,6 +50,8 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
                 timeout: 3000});
     var inner_circle = null;
     var outer_circle; 
+    var fail_counter = 0;
+    const MAX_FAIL_ATTEMPTS = 2; // max fail attempts before error message is shown, but app will continue polling location and ping to cloud
 
     map.on('locationfound', async function(e) {
         var radius = e.accuracy;
@@ -83,7 +85,16 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
         }
         console.log('location found');
         let success = await sendDataToLocationService(e);
-        updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, success);
+        if (success == false && fail_counter < MAX_FAIL_ATTEMPTS) { 
+            fail_counter = fail_counter + 1;
+            console.log(`Failed to send coordinates to the cloud for (occurence ${fail_counter}). Trying again ...`)
+            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, null);
+        } else if (success == false) {
+            console.log(`Maximum retries reached (${MAX_FAIL_ATTEMPTS}). Showing error message`);
+            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, success);
+        } else {
+            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, success);
+        }
     });
 
     map.on('locationerror', function(e) {
@@ -111,21 +122,27 @@ function updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, sta
     const timeNow = d.toTimeString().substring(0,8);
 
     if (status == null && e != null) {
+        // Location found, but GPS accuracy not high enough
         metadata_textbox.innerHTML = `<div class="row justify-content-center">
                                 <small class="font-weight-light text-muted ml-2">We found your location but signal is too weak. Please wait ...</small>
                                 <small class="font-weight-light text-muted block">(Current accuracy: ${e.accuracy.toFixed(0)} metres)</small>
                             </div>`
     } else if (status == null) {
+        // Location not found
         metadata_textbox.innerHTML = `<div class="row justify-content-center">
                                 <small class="font-weight-light text-muted ml-2">We're still searching for your location ...</small>
                             </div>`
     } else {
-        const statusHTML = status ? `
+        const statusHTML = status ? 
+                        // API call successful and coordinates sent to Cloud
+                        `
                         <div class="row justify-content-center">
                             <span class="spinner-grow spinner-grow-sm text-success"></span>
                             <span class="text-success font-weight-light ml-2">Tracking in progress</span>
                         </div>
-                        <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>` :
+                        <small class="row pl-2 mx-auto mt-1 justify-content-center text-muted">Last updated at ${timeNow} </small>` : 
+
+                        // Error occurred with API call
                         `
                         <div class="row justify-content-center">
                             <div class="spinner-grow spinner-grow-sm text-danger"></div>
@@ -158,6 +175,10 @@ function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {
     gps_group.clearLayers();
 
     // Remove metadata
+    clearLocationMetaData(metadata_id, metadata_placeholder_id);
+}
+
+function clearLocationMetaData(metadata_id, metadata_placeholder_id) {
     var metadata_textbox = document.getElementById(metadata_id);
     var metadata_placeholder = document.getElementById(metadata_placeholder_id);
     console.log("Clearing metadata")
@@ -182,7 +203,8 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
         else {
             stopLocate(map, gps_group, metadata_id, metadata_placeholder_id);
             const resp = await stopService();
-        
+            
+            clearLocationMetaData(metadata_id, metadata_placeholder_id); // clear again as tracking might still show
             if (resp.status != 200) {
                 console.log("Error in stopService API call. Status code: ", resp.status);
                 updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, false);
