@@ -14,37 +14,30 @@ function getUser() {
     // Fetch user object from Cognito
     var userPool = getUserPool();
     var cognitoUser = userPool.getCurrentUser();
+    console.log("Current user is: ", cognitoUser);
     return cognitoUser;
 }
 
 function validateCognitoUser() {
     // Validates that the app is logged in. Disregards whether session has expired or not
+    // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
     var cognitoUser = getUser();
     
 	//window.onload = function() {
     if (cognitoUser != null) {
+        console.log("Cognito user not null. Refreshing session to keep user logged in.")
+        
         // This fetches new session for the current user stored in localstorage no matter whether session has expired or not
-        // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
-        let success = cognitoUser.getSession(function(err, session) {
+        cognitoUser.getSession(function(err, session) {
             if (err) {
                 alert(err);
-                return false;
             }
             
             refreshCognitoCredentials(session, cognitoUser);
-
-            // Get user attributes for info
-			cognitoUser.getUserAttributes(function(err, result) {
-				if (err) {
-					console.log(err);
-					return false;
-				}
-				//console.log("User attributes: ", result);	
-			});			
-			return true;
         });
-        return success;
+        return true;
     } else {
+        console.log("Cognito user is NULL")
         return false;
     }
     //}
