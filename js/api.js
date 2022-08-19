@@ -44,9 +44,45 @@ async function getDevicePositionHistory(deviceId, start, end, maxResults=100) {
         EndTimeExclusive: end,
         MaxResults: maxResults
     }
-    const data = await locationClient.getDevicePositionHistory(params).promise();
-    console.log("GetDevicePositionHistory response: ", data);
-    return data;
+    
+    console.log("Calling getDevicePositionHistory with params: ", params);
+    
+    var nextToken = true // api paginates results, so we need to check nexttoken to retrieve all results
+    var data = [];
+    var counter = 0
+    const MAX_PAGES = 10; 
+    var apiFailAttempts = 0;
+    const MAX_RETRY = 3;
+    var statusCode = 200;
+
+    while (nextToken != null) {
+        try {
+            // Break if too many pages are being fetched as it can be costly
+            if (counter == MAX_PAGES) {
+                console.log("Data exceeded capacity to call. Stopping");
+                statusCode = 206;
+                break;
+            }
+
+            // Call API
+            counter = counter + 1;
+            console.log(`Fetching device positions (${counter})`)
+            let resp = await locationClient.getDevicePositionHistory(params).promise();
+            data = data.concat(resp.DevicePositions);
+            nextToken = resp.NextToken;
+            console.log("GetDevicePositionHistory response: ", resp);
+        } catch (error) {
+            // Handle failure
+            apiFailAttempts = apiFailAttempts + 1;
+            console.log(`An error occurred when calling getDevicePositionHistory ${apiFailAttempts} `, error);
+            if (apiFailAttempts >= MAX_RETRY) {
+                statusCode = 500;
+                break;
+            }
+        }        
+    }
+    console.log("API call completed")
+    return [data, statusCode];
 }
 
 async function getAWSCredentials() {
@@ -62,8 +98,7 @@ async function getAWSCredentials() {
         } else {
             await refreshCognitoCredentials(session, cognitoUser);
         }})
-
-    console.log("Jump to here")
+        
     const credentials = AWS.config.credentials; // null -> valid
     return credentials
 }

@@ -71,7 +71,6 @@ async function refreshCognitoCredentials(session, cognitoUser) {
                 console.log("An error occurred when refreshing AWS credentials: ", err);
             } 
             else {
-                // THIS PART DELAY
                 console.log("Re-initialising AWS credentials")
                 AWS.config.region = 'ap-southeast-1'; // Region
                 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
@@ -80,7 +79,6 @@ async function refreshCognitoCredentials(session, cognitoUser) {
                         [_config.cognito.cognitoIdentityProviderName]: session.getIdToken().getJwtToken()
                     }
                 });
-                console.log("New Cognito Identity credentials: ", AWS.config.credentials);
                 AWS.config.credentials.refresh((err)=> {
                     if(err)  {
                         console.log("Credentials could not be refreshed: ", err);

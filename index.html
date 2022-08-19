@@ -24,6 +24,7 @@
             src="./assets/bus.png" 
             style='max-width:40px; max-height:40px; padding-bottom: 1px; filter: invert(100%);'>
         <small class="font-weight-light text-light block mt-1" style="letter-spacing:3px;">CHANGI AIRPORT</small>
+        <div class="font-weight-bold text-dark" id="admin-logo" style="display:none;letter-spacing:3px;"">ADMIN</div>
     </div>
     
     <div id="wake-lock-alert"></div>
@@ -79,6 +80,7 @@
         if (window.location.hash == "#/admin") {
             console.log("Redirecting to admin")
             goToPage("admin");
+            document.getElementById("admin-logo").style.display = "block";
         } else {
             const username = getUser().username;
             console.log("username is ", username);

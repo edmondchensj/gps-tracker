@@ -50,10 +50,11 @@ function convertToISOTime(timestamp) {
   return timestampISO;
 }
 
-function addTime(timestamp, numHours) {
-  // Return new timestamp by adding timestamp to number of hours
+function addTime(timestamp, numMinutes) {
+  // Takes in a timestamp (epoch) and number of hours to add, then 
+  // Return new timestamp 
   var date = new Date(timestamp);
-  date.setHours(date.getHours() + numHours);
+  date.setMinutes(date.getMinutes() + numMinutes);
   return date;
 }
 

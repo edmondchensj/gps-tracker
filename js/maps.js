@@ -219,14 +219,14 @@ function getMarkers(positions) {
 
 async function renderAdminMap(map, deviceId=null, start=null, end=null) {
     // Render history of deviceId positions on the map
-    console.log("Rendering admin map");
-
-    console.log("Calling Location API");
-    const data = await getDevicePositionHistory(deviceId, start, end);
+    var data, statusCode;
+    [data, statusCode] = await getDevicePositionHistory(deviceId, start, end);
 
     // Loop through historical device positions and plot
-    const markers = getMarkers(data.DevicePositions);
-    var layer_group = new L.layerGroup(markers).addTo(map);
+    const markers = getMarkers(data);
+    var layerGroup = new L.layerGroup(markers).addTo(map);
+
+    return statusCode;
 }
 
 function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {

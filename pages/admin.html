@@ -5,28 +5,83 @@
     import { validateCognitoUser } from "./js/auth.js";
 
     var map = createMap("map");
+    setFormDefaults();
 
-    // Set defaults
-    document.getElementById("device-id").value = getBusPlate();
-    document.getElementById("start-ts").value = addTime(Date.now(), 8).toISOString().slice(0, 16);
+    window.onClearLayersClick = function(event) {
+        // removing layers also removes tilelayer, so we ignore this method
+        // map.eachLayer((layer) => {
+        //     layer.remove();
+        // });
 
-    window.onSearchButtonClick = function(event) {
+        // Delete map and re-create
+        map.remove();
+        map = createMap("map");
+    }
+
+    window.onSearchButtonClick = async function(event) {
         event.preventDefault(); // prevent page from refreshing before api call completes
+        triggerSearchBtnLoader("searchButton", "on");
+
+        // Set message
+        const message = document.getElementById("message");
+        message.classList = "alert alert-light font-weight-light py-1";
+        message.innerText = "Fetching data ...";
+        message.style.display = "block";
+
+        // Prepare map params
         const deviceId = document.getElementById("device-id").value;
         const startTimestamp = document.getElementById("start-ts").value;
-        const hours = document.getElementById("duration").value;
+        const minutes = document.getElementById("duration").value;
         const start = convertToISOTime(startTimestamp);
-        const end = addTime(start, hours);
-        renderAdminMap(map, deviceId, start, end);
+        const startEpoch = new Date(start).getTime();
+        const end = addTime(startEpoch, parseInt(minutes)).toISOString();
+        const statusCode = await renderAdminMap(map, deviceId, start, end);
+
+        // Render success, error or data incomplete message
+        if (statusCode == 200) {
+            message.classList = "alert alert-success font-weight-light py-1";
+            message.innerText = "Data fetched successfully";
+        } else if (statusCode == 500) {
+            message.classList = "alert alert-danger font-weight-light py-1";
+            message.innerText = "A server error occurred. Please try again."
+        } else if (statusCode == 206) {
+            message.classList = "alert alert-warning font-weight-light py-1";
+            message.innerText = "Dataset incomplete as there were too many data points. Please refine your search."
+        }
+
+        // Show clear all button
+        document.getElementById("clearLayersBtn").style.display = "block";
+        // Finally, turn off spinner
+        triggerSearchBtnLoader("searchButton", "off");
+    }
+
+    function triggerSearchBtnLoader(btnId, mode="on") {
+        // Start button spinner animation
+        const button = document.getElementById(btnId);
+        const SPINNER_HTML = `<div class="spinner-border spinner-border-sm text-light" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>`
+
+        if (mode == "on") {
+            let originalBtnHTML = JSON.stringify(button.innerHTML);
+            localStorage.setItem(btnId, originalBtnHTML); // save original to replace later
+            button.innerHTML = SPINNER_HTML;
+        } else if (mode == "off") {
+            let originalBtnHTML = localStorage.getItem(btnId);
+            localStorage.removeItem(btnId);
+            button.innerHTML = JSON.parse(originalBtnHTML);
+        }
+    }
+
+    function setFormDefaults() {
+        // Prefill form inputs
+        document.getElementById("device-id").value = getBusPlate();
+        document.getElementById("start-ts").value = addTime(Date.now(), 8*60).toISOString().slice(0, 16);
     }
 </script>
 
-<div class="row justify-content-center">
-    <div class="font-weight-light text-lg">ADMIN PORTAL</div>
-</div>
-
 <form class="mx-2">
-    <div class="row justify-content-center my-3">
+    <div class="row justify-content-center mt-3">
         <div class="col-md-3 px-1">
             <div class="form-group">
                 <label for="device-id">Bus Plate</label>
@@ -50,9 +105,13 @@
             <div class="form-group">
                 <label for="duration">Duration</label>
                 <select class="custom-select" id="duration">
-                    <option selected value="1">1 hour</option>
-                    <option value="3">3 hours</option>
-                    <option value="5">5 hours</option>
+                    <option selected value="2">2 min</option>
+                    <option selected value="3">3 min</option>
+                    <option selected value="5">5 min</option>
+                    <option value="10">10 min</option>
+                    <option value="20">20 min</option>
+                    <option value="30">30 min</option>
+                    <option value="60">60 min</option>
                 </select>
             </div>       
         </div>
@@ -69,8 +128,20 @@
     
 </form>
 
-<div class="row justify-content-center my-3">
-    <div id="map" style="height:500px; width:400px"></div>
+<div class="row justify-content-center my-0 d-flex">
+    <div class="alert font-weight-light"
+     id="message" 
+     style="display:none"></div>
+</div>
+<div class="row justify-content-center my-0 d-flex">
+    <button class="btn btn-link btn-sm text-muted font-weight-light mb-auto" 
+        id="clearLayersBtn" 
+        onclick="onClearLayersClick()"
+        style="display:none">Clear all markers</button>
+</div>
+
+<div class="row justify-content-center my-2">
+    <div id="map" style="height:570px; width:90%"></div>
 </div>
 
 
