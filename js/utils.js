@@ -32,7 +32,6 @@ const clearBusPlate =  function () {
 
 function getBusPlate() {
   const savedBusPlate = localStorage.getItem(busPlateStorageKey);
-  console.log("getbusplate: ", savedBusPlate);
   return savedBusPlate;
 }
 

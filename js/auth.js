@@ -1,4 +1,4 @@
-import { goToPage } from "./utils.js";
+import { goToPage, setBusPlate } from "./utils.js";
 
 function getUserPool() {
     // Authenticate with Amazon Cognito to retrieve user pool
@@ -6,9 +6,7 @@ function getUserPool() {
 		UserPoolId : _config.cognito.userPoolId,
         ClientId : _config.cognito.clientId
     };
-    console.log("Cognito data: ", data);
     var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
-    console.log("User pool: ", userPool);
     return userPool;
 }
 
@@ -16,28 +14,29 @@ function getUser() {
     // Fetch user object from Cognito
     var userPool = getUserPool();
     var cognitoUser = userPool.getCurrentUser();
-    console.log("Cognito user: ", cognitoUser);
+    console.log("Current user is: ", cognitoUser);
     return cognitoUser;
 }
 
 function validateCognitoUser() {
-    // Validates that the app is logged in. Tries to continue the previous session by refreshing it if it has expired.
+    // Validates that the app is logged in. Disregards whether session has expired or not
+    // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
     var cognitoUser = getUser();
-
+    
     if (cognitoUser != null) {
+        console.log("Cognito user not null. Refreshing session to keep user logged in.")
+        
         // This fetches new session for the current user stored in localstorage no matter whether session has expired or not
-        // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
-        let success = cognitoUser.getSession(function(err, session) {
+        cognitoUser.getSession(function(err, session) {
             if (err) {
                 alert(err);
-                return false;
             }
             
-            refreshCognitoCredentials(session, cognitoUser);		
-			return true;
+            refreshCognitoCredentials(session, cognitoUser);
         });
-        return success;
+        return true;
     } else {
+        console.log("Cognito user is NULL")
         return false;
     }
     //}
@@ -62,7 +61,6 @@ function getCognitoTokens(cognitoUser) {
 
 async function refreshCognitoCredentials(session, cognitoUser) {
     // Checks that AWS credentials require refreshing, and then refreshes both Cognito session and AWS credentials
-    console.log('Calling refresh cognito credentials. Session validity: ' + session.isValid());
     const refresh_token = session.getRefreshToken();  
 
     if (AWS.config.credentials == null || AWS.config.credentials.needsRefresh()) {
@@ -108,4 +106,61 @@ function logoutUser() {
         history.replaceState(null, null, ' '); // clear URL hash if present   
     }
 }
-export { validateCognitoUser, getUser, refreshCognitoCredentials, logoutUser, getCognitoTokens };
+
+function signIn(event) {
+    // Authenticates user at login page. Takes in form inputs with element IDs specified below
+
+    const buttonText = document.getElementById("signInButton").innerText;
+    document.getElementById("signInButton").innerHTML = `
+        <div class="spinner-border spinner-border-sm" role="status"></div>    
+    `
+    
+    var authenticationData = {
+        Username : document.getElementById("inputUsername").value,
+        Password : document.getElementById("inputPassword").value,
+    };
+    
+    var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+    
+    var poolData = {
+        UserPoolId : _config.cognito.userPoolId, // Your user pool id here
+        ClientId : _config.cognito.clientId, // Your client id here
+    };
+    
+    var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+    
+    var userData = {
+        Username : document.getElementById("inputUsername").value,
+        Pool : userPool,
+    };
+    
+    var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+    event.preventDefault(); // prevent page from refreshing before authentication is completed, causing network errors
+    cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: async function (result) {
+            console.log("User authenticated. Logging in...")
+            const __ = await goToPage("home");
+            setBusPlate(getUser().username);
+            document.getElementById("logout").style.display = "block"; 
+
+            // Refresh AWS credentials
+            console.log("Refreshing AWS credentials")
+            cognitoUser.getSession(function(err, session) {
+                if (err) {
+                    alert(err);
+                    return false;
+                }
+
+                // Force refresh for first login
+                refreshCognitoCredentials(session, cognitoUser, true);
+            })
+        },
+
+        onFailure: function(err) {
+            alert(err.message || JSON.stringify(err));
+            document.getElementById("signInButton").innerHTML = buttonText;
+        },
+    });
+}
+export { validateCognitoUser, getUser, refreshCognitoCredentials, 
+        logoutUser, getCognitoTokens, signIn };

@@ -19,48 +19,10 @@
 
 
 <script type="module">
-    import { getUser } from "./js/auth.js";
+    import { signIn } from "./js/auth.js";
     import { goToPage, setBusPlate } from "./js/utils.js";
 
     window.onSignInButtonClick = function(event) {
-        const buttonText = document.getElementById("signInButton").innerText;
-        document.getElementById("signInButton").innerHTML = `
-            <div class="spinner-border spinner-border-sm" role="status"></div>    
-        `
-        
-        var authenticationData = {
-            Username : document.getElementById("inputUsername").value,
-            Password : document.getElementById("inputPassword").value,
-        };
-        
-        var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
-        
-        var poolData = {
-            UserPoolId : _config.cognito.userPoolId, // Your user pool id here
-            ClientId : _config.cognito.clientId, // Your client id here
-        };
-        
-        var userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
-        
-        var userData = {
-            Username : document.getElementById("inputUsername").value,
-            Pool : userPool,
-        };
-        
-        var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
-        event.preventDefault(); // prevent page from refreshing before authentication is completed, causing network errors
-        cognitoUser.authenticateUser(authenticationDetails, {
-            onSuccess: async function (result) {
-                console.log("User authenticated. Logging in...")
-                const nav = await goToPage("home");
-                setBusPlate(getUser().username);
-                document.getElementById("logout").style.display = "block"; 
-            },
-
-            onFailure: function(err) {
-                document.getElementById("signInButton").innerHTML = buttonText;
-                alert(err.message || JSON.stringify(err));
-            },
-        });
+        signIn(event);
     }
 </script>

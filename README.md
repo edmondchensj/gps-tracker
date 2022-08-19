@@ -10,7 +10,6 @@ or
 2. Open browser and visit http://localhost:8000 (HTTP not HTTPS)
 
 
-
 ## Todos
 - implement re-polling of get device history -> retry with refresh credentials + to bypass maxresults issue
 
