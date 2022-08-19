@@ -1,4 +1,4 @@
-import { sendDataToLocationService, stopService } from "./api.js";
+import { sendDataToLocationService, stopService, getDevicePositionHistory } from "./api.js";
 
 const changi = [// southwest
         [1.3214, 103.9729],
@@ -166,6 +166,48 @@ function stopLocate(map, gps_group, metadata_id, metadata_placeholder_id) {
     metadata_textbox.style.display = "none";
 }
 
+
+function getMarkers(positions) {
+    // Get list of Leaflet markers for given array of DevicePositions
+    var markers = [];
+
+    for (const pos of positions) {
+        let lng = pos.Position[0]
+        let lat = pos.Position[1]
+
+        // Plot location
+        const marker = new L.circle([lat, lng], {
+            color: "#3F74FE",
+            fillColor: "#3F74FE",
+            fillOpacity: 0.9,
+            radius: 2
+        })
+        // Plotting larger radius to show horizontal accuracy
+        const marker_accuracy = new L.circle([lat, lng], {
+            color: "#61a5c2", 
+            fillColor: "#3d405b",
+            fillOpacity: 0.2,
+            radius: pos.Accuracy.Horizontal
+        })
+
+        markers.push(marker_accuracy); // push accuracy first so that it can appear below the marker
+        markers.push(marker);
+    }
+    return markers
+}
+
+async function renderAdminMap(map, deviceId=null, start=null, end=null) {
+    // Render history of deviceId positions on the map
+    console.log("Rendering admin map");
+
+    console.log("Calling Location API");
+    const data = await getDevicePositionHistory(deviceId, start, end);
+
+    // Loop through historical device positions and plot
+    const markers = getMarkers(data.DevicePositions);
+    var layer_group = new L.layerGroup(markers).addTo(map);
+}
+
 function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
     // Render Leaflet map. 
     // Shows user's latest geolocation and updates the metadata HTML div with latest location metadata 
@@ -245,6 +287,6 @@ L.tileLayer.grayscale = function (url, options) {
 	return new L.TileLayer.Grayscale(url, options);
 };
 
-export { createMap, renderMap };
+export { createMap, renderMap, renderAdminMap };
 
 

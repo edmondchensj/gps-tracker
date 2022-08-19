@@ -61,20 +61,30 @@
     window.logout = function() {
         logoutUser();
     }
+    const logout_link = document.getElementById("logout");
+    logout_link.style.display = "block"; 
 
+    console.log("Current path: ", window.location.hash);
+    
+    
     // Custom Routing
     const success = validateCognitoUser();
-    const logout_link = document.getElementById("logout");
     if (!success) {
+        // No user session exists
         console.log("Cognito user invalid, redirecting to login");
         logout_link.style.display = "none"; 
         goToPage("login");
     } else {
-        logout_link.style.display = "block"; 
-        const username = getUser().username;
-        console.log("username is ", username);
-        goToPage("home");
-        setBusPlate(username);
+        // Check admin route 
+        if (window.location.hash == "#/admin") {
+            console.log("Redirecting to admin")
+            goToPage("admin");
+        } else {
+            const username = getUser().username;
+            console.log("username is ", username);
+            goToPage("home");
+            setBusPlate(username);
+        }
     }
 
     // Wake lock to prevent screen from sleeping

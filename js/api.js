@@ -25,6 +25,49 @@ async function stopService() {
     return response; 
 }
 
+
+async function getDevicePositionHistory(deviceId, start, end, maxResults=100) {
+    // Make API call to Amazon Location Service to fetch device position history for a given date range and device ID
+    // Params defined in https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-location/interfaces/getdevicepositionhistorycommandinput.html
+    
+    // Initialise location client
+    const credentials = await getAWSCredentials();
+    const locationClient = new AWS.Location({
+        credentials,
+        region: _config.cognito.region
+    });
+
+    const params = {
+        TrackerName: _config.location.trackerName, 
+        DeviceId: deviceId,
+        StartTimeInclusive: start,
+        EndTimeExclusive: end,
+        MaxResults: maxResults
+    }
+    const data = await locationClient.getDevicePositionHistory(params).promise();
+    console.log("GetDevicePositionHistory response: ", data);
+    return data;
+}
+
+async function getAWSCredentials() {
+    // Get latest refreshed AWS credentials to make subsequent API calls
+    const cognitoUser = getUser();
+    if (cognitoUser == null) return false;
+
+    // Refresh credentials
+    await cognitoUser.getSession(async function(err, session) {
+        if (err) {
+            alert(err);
+            return false;
+        } else {
+            await refreshCognitoCredentials(session, cognitoUser);
+        }})
+
+    console.log("Jump to here")
+    const credentials = AWS.config.credentials; // null -> valid
+    return credentials
+}
+
 async function sendDataToLocationService(e) {
     // Send coordinates and other metadata to AWS Location Service if accuracy value <= 100
     
@@ -35,22 +78,12 @@ async function sendDataToLocationService(e) {
         return null;
     }
 
-    // Get credentials
-    const cognitoUser = getUser();
-    if (cognitoUser == null) return false;
-    cognitoUser.getSession(function(err, session) {
-        if (err) {
-            alert(err);
-            return false;
-        } else {
-            refreshCognitoCredentials(session, cognitoUser);
-        }})
-    const credentials = AWS.config.credentials;
+    const credentials = getAWSCredentials()
 
     // Initialise Location client
     const locationClient = new AWS.Location({
         credentials,
-        region: "ap-southeast-1"
+        region: _config.cognito.region
     });
 
     // Test parameters (ignore)
@@ -94,4 +127,4 @@ async function sendDataToLocationService(e) {
     }
 }
 
-export { sendDataToLocationService, stopService };
+export { sendDataToLocationService, stopService, getDevicePositionHistory };

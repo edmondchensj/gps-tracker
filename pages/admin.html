@@ -1,0 +1,76 @@
+<!-- Run map -->
+<script type="module">
+    import { createMap, renderAdminMap } from "./js/maps.js";
+    import { getBusPlate, convertToISOTime, addTime, getCurrentISOTime } from "./js/utils.js";
+    import { validateCognitoUser } from "./js/auth.js";
+
+    var map = createMap("map");
+
+    // Set defaults
+    document.getElementById("device-id").value = getBusPlate();
+    document.getElementById("start-ts").value = addTime(Date.now(), 8).toISOString().slice(0, 16);
+
+    window.onSearchButtonClick = function(event) {
+        event.preventDefault(); // prevent page from refreshing before api call completes
+        const deviceId = document.getElementById("device-id").value;
+        const startTimestamp = document.getElementById("start-ts").value;
+        const hours = document.getElementById("duration").value;
+        const start = convertToISOTime(startTimestamp);
+        const end = addTime(start, hours);
+        renderAdminMap(map, deviceId, start, end);
+    }
+</script>
+
+<div class="row justify-content-center">
+    <div class="font-weight-light text-lg">ADMIN PORTAL</div>
+</div>
+
+<form class="mx-2">
+    <div class="row justify-content-center my-3">
+        <div class="col-md-3 px-1">
+            <div class="form-group">
+                <label for="device-id">Bus Plate</label>
+                <input class="form-control"
+                     type="text" 
+                     id="device-id" 
+                     name="username"
+                     required 
+                     autofocus>
+            </div>
+        </div>
+
+        <div class="col-md-4 px-1">
+            <div class="form-group">
+                <label for="start-ts">Starting from</label>
+                <input class="form-control" type="datetime-local" id="start-ts" placeholder="Start" name="username" required autofocus>
+            </div>
+        </div>
+        
+        <div class="col-md-2 px-1">
+            <div class="form-group">
+                <label for="duration">Duration</label>
+                <select class="custom-select" id="duration">
+                    <option selected value="1">1 hour</option>
+                    <option value="3">3 hours</option>
+                    <option value="5">5 hours</option>
+                </select>
+            </div>       
+        </div>
+        
+        <div class="col-md-1 px-0 text-center d-flex">
+            <div class="form-group mx-auto mt-auto">
+                <button id="searchButton" class="btn btn-primary px-2" type="button" onclick="onSearchButtonClick(event)">
+                    <img class='' id='' src="/assets/search.svg" style='width:18px; filter: invert(100%)'>
+                </button>    
+            </div>
+        </div>
+        
+    </div>
+    
+</form>
+
+<div class="row justify-content-center my-3">
+    <div id="map" style="height:500px; width:400px"></div>
+</div>
+
+

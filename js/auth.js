@@ -21,10 +21,9 @@ function getUser() {
 }
 
 function validateCognitoUser() {
-    // Validates that the app is logged in. Disregards whether session has expired or not
+    // Validates that the app is logged in. Tries to continue the previous session by refreshing it if it has expired.
     var cognitoUser = getUser();
-    
-	//window.onload = function() {
+
     if (cognitoUser != null) {
         // This fetches new session for the current user stored in localstorage no matter whether session has expired or not
         // https://stackoverflow.com/questions/42002953/how-to-remember-autorefresh-login-token-when-using-amazon-web-services-cognito
@@ -34,16 +33,7 @@ function validateCognitoUser() {
                 return false;
             }
             
-            refreshCognitoCredentials(session, cognitoUser);
-
-            // Get user attributes for info
-			cognitoUser.getUserAttributes(function(err, result) {
-				if (err) {
-					console.log(err);
-					return false;
-				}
-				console.log("User attributes: ", result);	
-			});			
+            refreshCognitoCredentials(session, cognitoUser);		
 			return true;
         });
         return success;
@@ -70,18 +60,20 @@ function getCognitoTokens(cognitoUser) {
     return tokens;
 }
 
-function refreshCognitoCredentials(session, cognitoUser) {
+async function refreshCognitoCredentials(session, cognitoUser) {
     // Checks that AWS credentials require refreshing, and then refreshes both Cognito session and AWS credentials
-    console.log('Session validity: ' + session.isValid());
+    console.log('Calling refresh cognito credentials. Session validity: ' + session.isValid());
     const refresh_token = session.getRefreshToken();  
 
     if (AWS.config.credentials == null || AWS.config.credentials.needsRefresh()) {
         console.log("AWS credentials require refreshing.")
-        cognitoUser.refreshSession(refresh_token, (err, session) => {
+
+        await cognitoUser.refreshSession(refresh_token, (err, session) => {
             if(err) {
                 console.log("An error occurred when refreshing AWS credentials: ", err);
             } 
             else {
+                // THIS PART DELAY
                 console.log("Re-initialising AWS credentials")
                 AWS.config.region = 'ap-southeast-1'; // Region
                 AWS.config.credentials = new AWS.CognitoIdentityCredentials({

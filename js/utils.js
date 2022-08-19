@@ -13,7 +13,8 @@ var setInnerHTMLWithJS = function(div_id, html) {
 
 const goToPage = async function (routeKey) {
   const routes = {"home": "/pages/home-screen.html",
-                  "login": "/pages/login.html"}
+                  "login": "/pages/login.html",
+                  "admin": "/pages/admin.html"}
   const html = await fetch(routes[routeKey]).then((data) => data.text());
 
   setInnerHTMLWithJS("main", html);
@@ -38,9 +39,23 @@ function getBusPlate() {
 function getCurrentISOTime() {
   // Return ISO-8601 time format (required for AWS Location batch update)
   const date = new Date();
-  const timestamp = date.toISOString()
+  const timestamp = date.toISOString();
   console.log("timestamp: ", timestamp)
-  return timestamp
+  return timestamp;
+}
+
+function convertToISOTime(timestamp) {
+  const timestampLocal = new Date(timestamp);
+  const timestampISO = timestampLocal.toISOString();
+  console.log("ISO Time from input: ", timestampISO);
+  return timestampISO;
+}
+
+function addTime(timestamp, numHours) {
+  // Return new timestamp by adding timestamp to number of hours
+  var date = new Date(timestamp);
+  date.setHours(date.getHours() + numHours);
+  return date;
 }
 
 async function setScreenWakeLock() {
@@ -86,4 +101,6 @@ async function setScreenWakeLock() {
     });
   }
 }
-export { setInnerHTMLWithJS, goToPage, setBusPlate, clearBusPlate, getBusPlate, getCurrentISOTime, setScreenWakeLock };
+export { setInnerHTMLWithJS, goToPage, setBusPlate,
+   clearBusPlate, getBusPlate, getCurrentISOTime, 
+   setScreenWakeLock, convertToISOTime, addTime };
