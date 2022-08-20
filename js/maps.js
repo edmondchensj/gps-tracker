@@ -41,8 +41,36 @@ function createMap(map_id, lat=1.355, lng=103.991, zoom=12) {
     return map;
 }
 
-function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, maxZoom=16) {
-    // Show user's current GPS location
+function plotUserLocationOnMap(map, e, gps_group) {
+    // Plot user's location as circle on map and add object to gps_group map layer
+    const inner_circle = new L.circle(e.latlng, {
+        radius: 8,
+        weight: 2,
+        color: '#ffffff',
+        fillColor: '#1249A6',
+        fillOpacity: 0.8}).addTo(map);
+    const outer_circle = new L.circle(e.latlng, {
+            radius: e.accuracy,
+            weight: 3,
+            color: '#3388ff',
+            fillColor: '#3388ff',
+            fillOpacity: 0.3}).addTo(map);
+
+    // Add to layer group for easier deleting 
+    gps_group.addLayer(inner_circle);
+    gps_group.addLayer(outer_circle);
+    return [inner_circle, outer_circle];
+}
+
+function updateUserLocationOnMap(e, inner_circle, outer_circle) {
+    // Given a plotted object on map, update the plots with new location and accuracy
+    inner_circle.setLatLng(e.latlng);
+    outer_circle.setLatLng(e.latlng);
+    outer_circle.setRadius(e.accuracy);
+}
+
+function locateUser(map, gps_group, metadata_id, metadata_placeholder_id, maxZoom=16) {
+    // Find user's current location, show on map, and send to AWS cloud for processing
     map.locate({setView: true, 
                 maxZoom: maxZoom,
                 watch: true,
@@ -54,47 +82,39 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
     const MAX_FAIL_ATTEMPTS = 2; // max fail attempts before error message is shown, but app will continue polling location and ping to cloud
 
     map.on('locationfound', async function(e) {
-        var radius = e.accuracy;
 
-        // Create new marker if location found for the first time
+        console.log('location found with accuracy: ', e.accuracy);
+
         if (inner_circle == null) {
-            inner_circle = new L.circle(e.latlng, {
-                            radius: 8,
-                            weight: 2,
-                            color: '#ffffff',
-                            fillColor: '#1249A6',
-                            fillOpacity: 0.8}).addTo(map);
-            //inner_circle.bindPopup(popupContent).openPopup();
-            outer_circle = new L.circle(e.latlng, {
-                            radius: radius,
-                            weight: 3,
-                            color: '#3388ff',
-                            fillColor: '#3388ff',
-                            fillOpacity: 0.3}).addTo(map);
-
-            // Add to layer group for easier deleting 
-            gps_group.addLayer(inner_circle);
-            gps_group.addLayer(outer_circle);
-        }
-        // Update marker for subsequent new gps locations
-        else {
-            //inner_circle.getPopup().setContent(popupContent); 
-            inner_circle.setLatLng(e.latlng);
-            outer_circle.setLatLng(e.latlng);
-            outer_circle.setRadius(radius);
-        }
-        console.log('location found');
-        let success = await sendDataToLocationService(e);
-        if (success == false && fail_counter < MAX_FAIL_ATTEMPTS) { 
-            fail_counter = fail_counter + 1;
-            console.log(`Failed to send coordinates to the cloud for (occurence ${fail_counter}). Trying again ...`)
-            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, null);
-        } else if (success == false) {
-            console.log(`Maximum retries reached (${MAX_FAIL_ATTEMPTS}). Showing error message`);
-            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, success);
+            [inner_circle, outer_circle] = plotUserLocationOnMap(map, e, gps_group)
         } else {
-            updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, success);
+            updateUserLocationOnMap(e, inner_circle, outer_circle);
         }
+        
+        // Accuracy check -- dont transmit data if accuracy > 100
+        if (e.accuracy > _config.gps.maxAccuracy) {
+            console.log("GPS error margin too high, ignoring values and waiting for next re-try...")
+            updateLocationMetadataText(e, metadata_id, metadata_placeholder_id, null);
+        }
+
+        else {
+            let success = await sendDataToLocationService(e);
+
+            if (success == false && fail_counter < MAX_FAIL_ATTEMPTS) { 
+                // API failed, but within fail limit
+                fail_counter = fail_counter + 1;
+                console.log(`Failed to send coordinates to the cloud for (occurence ${fail_counter}). Trying again ...`)
+                updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, null);
+
+            } else if (success == null) {
+                console.log("No API call made as last call was too recent.")
+                
+            } else {
+                // either success or failure
+                updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, success);
+            }
+        }
+        
     });
 
     map.on('locationerror', function(e) {
@@ -102,8 +122,7 @@ function showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id, 
         updateLocationMetadataText(null, metadata_id, metadata_placeholder_id, null);
     });
 
-    // Allow user to modify zoom level 
-    map.on('zoomend', changeLocateMaxZoom);
+    map.on('zoomend', changeLocateMaxZoom);// Allow user to modify zoom level 
 
     function changeLocateMaxZoom(e) {
     if (map._locateOptions) {
@@ -240,7 +259,7 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
     var toggle_button = $('#' + toggle_btn_id);
     toggle_button.on('change', async function() {
         if (toggle_button.is(':checked')) {
-            showUserLocation(map, gps_group, metadata_id, metadata_placeholder_id);
+            locateUser(map, gps_group, metadata_id, metadata_placeholder_id);
         }
         else {
             stopLocate(map, gps_group, metadata_id, metadata_placeholder_id);
@@ -256,6 +275,7 @@ function renderMap(map, toggle_btn_id, metadata_id, metadata_placeholder_id) {
 
 }
 
+// Custom JS function to make tile layer grayscale
 L.TileLayer.Grayscale = L.TileLayer.extend({
 	options: {
 		quotaRed: 21,

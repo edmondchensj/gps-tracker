@@ -1,5 +1,5 @@
 import { getUser, refreshCognitoCredentials, getCognitoTokens } from "./auth.js";
-import { getBusPlate, getCurrentISOTime } from "./utils.js";
+import { getBusPlate, getCurrentISOTime, getTimeDiffInSeconds } from "./utils.js";
 
 async function stopService() {
     // Call stop-service API when toggle is turned off, which wipes out the ETA calculations in the backend
@@ -7,7 +7,6 @@ async function stopService() {
     console.log("Calling stopService API");
     const cognitoUser = getUser();
     const cognitoTokens = getCognitoTokens(cognitoUser);
-    console.log("Cognito tokens: ", cognitoTokens)
     const url = _config.apiUrls.stopService;
     const response = await fetch(url, {
         method: 'POST', 
@@ -31,7 +30,8 @@ async function getDevicePositionHistory(deviceId, start, end, maxResults=100) {
     // Params defined in https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-location/interfaces/getdevicepositionhistorycommandinput.html
     
     // Initialise location client
-    const credentials = await getAWSCredentials();
+    const cognitoUser = getUser();
+    const credentials = await getAWSCredentials(cognitoUser);
     const locationClient = new AWS.Location({
         credentials,
         region: _config.cognito.region
@@ -50,7 +50,7 @@ async function getDevicePositionHistory(deviceId, start, end, maxResults=100) {
     var nextToken = true // api paginates results, so we need to check nexttoken to retrieve all results
     var data = [];
     var counter = 0
-    const MAX_PAGES = 10; 
+    const MAX_PAGES = Math.floor(_config.location.maxSizeGetDevicePositionHistory / maxResults);
     var apiFailAttempts = 0;
     const MAX_RETRY = 3;
     var statusCode = 200;
@@ -85,9 +85,8 @@ async function getDevicePositionHistory(deviceId, start, end, maxResults=100) {
     return [data, statusCode];
 }
 
-async function getAWSCredentials() {
+async function getAWSCredentials(cognitoUser) {
     // Get latest refreshed AWS credentials to make subsequent API calls
-    const cognitoUser = getUser();
     if (cognitoUser == null) return false;
 
     // Refresh credentials
@@ -99,31 +98,39 @@ async function getAWSCredentials() {
             await refreshCognitoCredentials(session, cognitoUser);
         }})
         
-    const credentials = AWS.config.credentials; // null -> valid
+    const credentials = AWS.config.credentials; 
+    console.log("AWS Credentials: ", AWS.config.credentials);
     return credentials
 }
 
 async function sendDataToLocationService(e) {
-    // Send coordinates and other metadata to AWS Location Service if accuracy value <= 100
-    
-    // Accuracy check -- dont transmit data if accuracy > 100
-    console.log("Current GPS accuracy: ", e.accuracy);
-    if (e.accuracy > _config.gps.maxAccuracy) {
-        console.log("GPS error margin too high, ignoring values and waiting for next re-try...")
+    /* Send GPS coordinates and other metadata to AWS Location Service if accuracy value <= 100
+
+    Returns:
+        null if no call was made (reason: last call too recent)
+        true if call succeeded
+        false if call failed
+    */
+    const APINAME = "sendDataToLocationService";
+    const timestamp = getCurrentISOTime();
+
+    // Time check -- dont transmit data if last send was too recent
+    const lastSuccessTimestamp = getLastSuccessTimestamp(APINAME);
+    const timeDiff = getTimeDiffInSeconds(lastSuccessTimestamp, timestamp);
+    if (timeDiff <= _config.location.maxUpdateFrequencySeconds) {
+        console.log(`Last call was too recent (${timeDiff} seconds ago)`);
         return null;
     }
 
-    const credentials = getAWSCredentials()
+    // Get credentials
+    const cognitoUser = getUser();
+    const credentials = await getAWSCredentials(cognitoUser);
 
     // Initialise Location client
     const locationClient = new AWS.Location({
         credentials,
         region: _config.cognito.region
     });
-
-    // Test parameters (ignore)
-    const insideGeofence = [103.98457177301275, 1.3395123571936962]
-    const outsideGeofence = [103.98530940713842,1.3405608558355409]
 
     // Parse service type param using username
     const username = cognitoUser.username;
@@ -139,7 +146,7 @@ async function sendDataToLocationService(e) {
                 Horizontal: e.accuracy
             },
             Position: [e.latlng.lng, e.latlng.lat],
-            SampleTime: getCurrentISOTime(),
+            SampleTime: timestamp,
             PositionProperties: {
                 "field1": serviceType // type of service: airside or landside
             }
@@ -155,11 +162,25 @@ async function sendDataToLocationService(e) {
         const statusCode = data.$response.httpResponse.statusCode
         console.log("Status code: ", statusCode);
         if (statusCode!=200) return false;
-        else return true;
+        else { 
+            saveLastSuccessTimestamp(APINAME, timestamp);
+            return true;
+        }
     } catch (error) {
         console.log("An error occurred when updating device position", error, error.stack); // an error occurred
         return false;
     }
 }
+
+function saveLastSuccessTimestamp(apiName, timestamp) {
+    // Save timestamp of last successful API call to localstorage 
+    localStorage.setItem(apiName, timestamp);
+}
+
+function getLastSuccessTimestamp(apiName) {
+    // Get timestamp of last successful API call saved in localstorage
+    return localStorage.getItem(apiName); 
+}
+
 
 export { sendDataToLocationService, stopService, getDevicePositionHistory };

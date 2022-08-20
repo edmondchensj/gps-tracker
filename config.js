@@ -7,7 +7,9 @@ window._config = {
         cognitoIdentityProviderName: "cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_f78ln7RZL" // cognito login with user pool id
     },
     location: {
-        trackerName: "bus_tracker"
+        trackerName: "bus_tracker",
+        maxUpdateFrequencySeconds: 10, // minimum duration between each update
+        maxSizeGetDevicePositionHistory: 1000 // maximum number of device positions to fetch per getDevicePositionHistory call
     },
     gps: {
         maxAccuracy: 250

@@ -46,7 +46,7 @@
             message.innerText = "A server error occurred. Please try again."
         } else if (statusCode == 206) {
             message.classList = "alert alert-warning font-weight-light py-1";
-            message.innerText = "Dataset incomplete as there were too many data points. Please refine your search."
+            message.innerText = `Data fetch limit reached (${_config.location.maxSizeGetDevicePositionHistory}). Please break up your search to fetch the full dataset.`
         }
 
         // Show clear all button

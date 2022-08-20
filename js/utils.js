@@ -39,14 +39,12 @@ function getCurrentISOTime() {
   // Return ISO-8601 time format (required for AWS Location batch update)
   const date = new Date();
   const timestamp = date.toISOString();
-  console.log("timestamp: ", timestamp)
   return timestamp;
 }
 
 function convertToISOTime(timestamp) {
   const timestampLocal = new Date(timestamp);
   const timestampISO = timestampLocal.toISOString();
-  console.log("ISO Time from input: ", timestampISO);
   return timestampISO;
 }
 
@@ -56,6 +54,14 @@ function addTime(timestamp, numMinutes) {
   var date = new Date(timestamp);
   date.setMinutes(date.getMinutes() + numMinutes);
   return date;
+}
+
+function getTimeDiffInSeconds(isoTime1, isoTime2) {
+  // Get time difference in seconds between two iso timestamps
+  var d1 = new Date(isoTime1);
+  var d2 = new Date(isoTime2);
+  const diff = Math.abs(d2 - d1);
+  return Math.floor(diff/1e3);
 }
 
 async function setScreenWakeLock() {
@@ -103,4 +109,4 @@ async function setScreenWakeLock() {
 }
 export { setInnerHTMLWithJS, goToPage, setBusPlate,
    clearBusPlate, getBusPlate, getCurrentISOTime, 
-   setScreenWakeLock, convertToISOTime, addTime };
+   setScreenWakeLock, convertToISOTime, addTime, getTimeDiffInSeconds };
